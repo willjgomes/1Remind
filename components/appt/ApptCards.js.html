@@ -1,0 +1,75 @@
+// Component:    capptcard
+// Description:  Expansion panel to display appoints as events
+// Model:        Appt Model Object {id:'',events:[]}
+
+ const capptcards = { 
+  props: {
+    modelValue: {
+      type: Object,
+      default: () => {return {id:'',events:[]}}
+    },
+    title: {
+      type: String,
+      required: false,
+    },
+    datechip: {
+      type: String,
+      required: false,
+    },
+    loading: {
+      type: Boolean,
+      default: false,
+      required: false,
+    }
+  },
+  setup(props,{ emit }) {
+    const apptEvents = computed({
+      get: () => props.modelValue,
+      set: (value) => emit('update:modelValue', value), //Not sure if updating entire array is efficient
+    });
+
+    return {
+      apptEvents,
+      h_showDateHeader,
+      h_getDateLabel,
+    };
+  },
+
+  template:  /*html*/ `
+    <v-expansion-panel>
+      <v-expansion-panel-title v-slot="{ expanded }">
+        <v-badge v-if="!expanded" :content="apptEvents.events.length" inline></v-badge>
+        {{title}}
+        <v-spacer></v-spacer>
+        <v-chip v-if="datechip" color="primary">
+          {{ datechip }}
+        </v-chip>
+        <v-icon  icon="mdi-calendar-plus" size="large" density="compact"></v-icon>
+      </v-expansion-panel-title>
+      <v-expansion-panel-text v-if="loading">
+          <v-progress-circular indeterminate></v-progress-circular>
+      </v-expansion-panel-text>
+      <v-expansion-panel-text v-else>                 
+        <template v-for="(event,index) in apptEvents.events">
+          <span v-if="h_showDateHeader(event, index, apptEvents.events) && !datechip" color="primary">  
+            <v-chip color="primary">
+              {{ h_getDateLabel(new Date(event.date)) }}
+            </v-chip>
+          </span>
+          <v-card color="blue-lighten-1" 
+              class="mt-2 mb-2 pa-2" border>
+            <v-card-title class="text-body-1 pa-0">
+              {{ event.summary }}
+            </v-card-title>
+            <v-card-subtitle>
+              {{ event.start }} - {{ event.end }}
+            </v-card-subtitle>
+          </v-card>
+        </template>
+        <v-card-text v-if="apptEvents.events.length == 0" >
+          No appointments scheduled.
+        </v-card-text>
+      </v-expansion-panel-text>
+    </v-expansion-panel>
+  `
+ }

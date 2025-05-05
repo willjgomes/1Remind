@@ -1,0 +1,21 @@
+<!-- Testing of Stored Settings & Preferences from Google Sheet -->
+<v-card class="mb-2 pa-2">
+  <v-card-text v-if="appDataLoaded">
+      {{ appData.calendars.billCID }}
+      <v-divider></v-divider>
+      {{ appData.calendars.promoCID }}
+      <v-divider></v-divider>
+      {{ appData.calendars.mainCID }}
+      <v-divider></v-divider>
+      BillID{{events.data.billId}}
+  </v-card-text>
+</v-card>
+
+<!-- Testing Google Keep Notes -->
+<v-card class="mb-2 pa-2">            
+  <a href="http://keep.google.com/#LIST/1MKhU_BohotgaAh6QtTyAXV0zJb0qfUXTQ5NqyIG9sdglePQGizOes_FVSVbgz50">
+    Keep Note 
+  </a>
+  <v-divider></v-divider>
+  <a href="http://keep.google.com/">Keep Note 2</a>
+</v-card>

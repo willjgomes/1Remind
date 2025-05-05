@@ -1,0 +1,366 @@
+
+//TODO: Look into creating a single component for both edit and create promo
+const c_promo_edit = {
+  
+  components: {
+    cpromobankform,
+    cpromocreditform,
+   },
+
+  props: {
+    modelValue: {
+      type: Object,
+      default: () => {return {id:'',events:[]}}
+    }
+  },
+
+  setup(props,{ emit }) {
+    const promoEvent = computed({
+      get: () => props.modelValue,
+      set: (value) => emit('update:modelValue', value), 
+    });
+
+    const creditFormRef = ref(null);
+    const bankFormRef = ref(null);
+  
+    function save(){
+      const type = promoEvent.value.input.promoCategory;
+      if      (type === 'Credit' && creditFormRef.value) { 
+        creditFormRef.value.update();
+      }  else if (type === 'Bank' && bankFormRef.value) { 
+        bankFormRef.value.update(); 
+      }
+      promoEvent.value.editShown = false; //For some reason setting this in the downstream updatePromo function didn't work
+    }
+
+    function cancel(){
+      h_copyObject(promoEvent.value.original, promoEvent.value.input, false);
+
+      promoEvent.value.editShown = false;
+    }
+    
+    return {
+      creditFormRef,
+      bankFormRef,
+      promoEvent,
+      cancel,
+      save,
+    }
+  },
+
+  template: /*html*/ `
+    <v-dialog
+      v-model="promoEvent.editShown"
+      width="auto"
+      class="mx-auto"
+      persistent
+    >
+       <v-card class="pa-4"
+      :title="promoEvent.input.companyName"
+      > 
+     
+          <template v-if="promoEvent.input.promoCategory == 'Credit'">
+            <cpromocreditform v-model="promoEvent" ref="creditFormRef"></cpromocreditform>
+          </template>
+          <template v-else-if="promoEvent.input.promoCategory == 'Bank'">
+            <cpromobankform v-model="promoEvent" ref="bankFormRef"></cpromobankform>
+          </template>
+
+  
+        <v-card-actions>
+          <v-btn
+            text="Cancel"
+            variant="plain"
+            @click="cancel()" 
+          ></v-btn>
+
+          <v-btn
+            text="Save"
+            variant="tonal"
+            @click="save()" 
+          ></v-btn>
+
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  `
+}
+
+const cpromoeditspend = {
+  props: {
+    modelValue: {
+      type: Object,
+      default: () => {return {id:'',events:[]}}
+    }
+  },
+
+  setup(props,{ emit }) {
+    const promoEvent = computed({
+      get: () => props.modelValue,
+      set: (value) => emit('update:modelValue', value), 
+    });
+  
+    const val = ref('');
+
+    async function updatePromoDetails(){
+      google.script.run.withSuccessHandler((data) => {console.log("Promo Updated");}).
+        updatePromoDetails(promoEvent.value.calId, promoEvent.value.input);
+
+      promoEvent.value.editSpendShown = false;            
+    }
+
+    function add(){
+      let total = parseInt(promoEvent.value.input.txnDetails.totalAmt)
+      let amt = parseInt(val.value);
+      
+      if (amt > 0){
+        promoEvent.value.input.txnDetails.totalAmt = total + amt;
+      }
+
+      val.value = "";
+    }
+
+    function subtract(){
+      let total = parseInt(promoEvent.value.input.txnDetails.totalAmt)
+      let amt = parseInt(val.value);
+      
+      if (amt > 0){
+        promoEvent.value.input.txnDetails.totalAmt = total - amt;
+      }
+
+      val.value = "";
+    }
+
+    function cancel(){
+      //Its unclear why i need to do .value here, when i don't do it in the BillActions.js for similar access
+      console.log("Cancel Edit Spend:" + promoEvent.value.input.txnDetails.totalAmt + " " + promoEvent.value.original.txnDetails.totalAmt);
+      promoEvent.value.input.txnDetails.totalAmt = promoEvent.value.original.txnDetails.totalAmt;
+      promoEvent.value.editSpendShown = false;
+    }
+
+    return {
+      promoEvent,
+      val,
+      add,
+      subtract,
+      cancel,
+      updatePromoDetails,
+    }
+  },
+
+  template: `
+    <v-dialog
+      v-model="promoEvent.editSpendShown"
+      width="auto"
+      class="mx-auto"
+      persistent
+    >
+      <v-card class="pa-4"
+      :title="promoEvent.input.companyName"
+      > 
+        <v-text-field 
+          v-model="val"
+          label="Amount" 
+          prepend-icon="mdi-minus-box-outline"
+          append-icon="mdi-plus-box-outline"
+          @click:prepend="subtract()"
+          @click:append="add()">
+        </v-text-field>
+         Total Spend: 
+        {{promoEvent.input.txnDetails.totalAmt}}
+        <v-card-actions>
+          <v-btn
+            text="Cancel"
+            variant="plain"
+            @click="cancel()" 
+          ></v-btn>
+
+          <v-btn
+            text="Save"
+            variant="tonal"
+            @click="updatePromoDetails()" 
+          ></v-btn>
+
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  `
+}
+
+const cpromodeleteconfirm = {
+  props: {
+    modelValue: {
+      type: Object,
+      required: true
+    }    
+  },
+
+  setup(props,{ emit }) {
+    const promoEvent = computed({
+      get: () => props.modelValue,
+      set: (value) => emit('update:modelValue', value), 
+    });
+  
+    async function deletePromotion(){
+      google.script.run.withSuccessHandler((data) => {console.log("Promo Deleted");}).
+        deletePromotion(promoEvent.value.calId, promoEvent.value.input);
+      
+      //Last action refresh
+      lastActionModel.value = promoEvent.value.index;
+      lastAction.value = "promodeleted";
+
+      promoEvent.value.deleteConfirmShown = false;
+    }
+
+    return {
+      promoEvent,
+      deletePromotion,
+    }
+  },
+
+  template: `
+    <v-dialog
+      v-model="promoEvent.deleteConfirmShown"
+      width="auto"
+      class="mx-auto"
+      persistent
+    >
+      <v-card class="pa-4"
+      > 
+        <v-card-text>
+          Confirm delete of  {{promoEvent.input.companyName}} Promotion.
+        </v-card-text>
+        <v-card-text color="yellow">
+          WARNING: This will delete all details and transaction history for the promotion.
+          This action cannot be undone.
+        </v-card-text>
+
+        <v-card-actions>
+          <v-btn
+            text="Cancel"
+            variant="plain"
+            @click="promoEvent.deleteConfirmShown = false;" 
+          ></v-btn>
+
+          <v-btn
+            text="Confirm"
+            variant="tonal"
+            @click="deletePromotion()" 
+          ></v-btn>
+
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  `
+}
+
+// Component:    Add/Edit Transaction Activity
+// Description:  Edit details of a transaction if idx provided, or add a new one
+// Model:        
+
+const c_promo_edit_txn = {
+  props: {
+    modelValue: {
+      type: Object,
+      default: () => {return {id:'',events:[]}}
+    }
+  },
+
+  setup(props,{ emit }) {
+    const promoEvent = computed({
+      get: () => props.modelValue,
+      set: (value) => emit('update:modelValue', value), 
+    });
+
+    const txn = reactive({});
+
+    async function updatePromoDetails(){
+      if (promoEvent.value.txnIdx == -1){
+        promoEvent.value.input.txnDetails.txnList.push(promoEvent.value.txn);
+      }
+
+      google.script.run.withSuccessHandler((data) => {
+           console.log("Promo Updated");
+           savingShown.value = false;
+        }).
+        updatePromoDetails(promoEvent.value.calId, promoEvent.value.input);
+
+      promoEvent.value.editTxnShown = false;  
+      savingShown.value = true;          
+    }
+
+    function deleteTxn(){
+      promoEvent.value.input.txnDetails.txnList.splice(promoEvent.value.txnIdx,1);      
+      promoEvent.value.editTxnShown = false;    
+      updatePromoDetails();       
+
+    }
+
+    function cancel(){
+      if (promoEvent.value.txnIdx >= 0){
+        h_copyObject(promoEvent.value.original, promoEvent.value.txn, false);
+      }
+      promoEvent.value.editTxnShown = false; 
+    }   
+
+    return {
+      promoEvent,
+      cancel,
+      deleteTxn,
+      updatePromoDetails,
+    }
+  },
+
+  template: `
+    <v-dialog
+      v-model="promoEvent.editTxnShown"
+      width="auto"
+      class="mx-auto"
+      persistent
+    >
+      <v-card class="pa-4"
+      title="Transaction Activity"
+      :subtitle="promoEvent.input.companyName"
+      > 
+        <v-text-field 
+          v-model="promoEvent.txn.name"
+          label="Transaction Name" >
+        </v-text-field>
+        <v-text-field 
+          v-model="promoEvent.txn.amt"
+          prefix="$"
+          label="Transaction Amount" 
+          type="Number">
+        </v-text-field>
+        <v-text-field 
+          v-model="promoEvent.txn.date"
+          label="Transaction Date" 
+          type="date">
+        </v-text-field>
+        <v-checkbox v-model="promoEvent.txn.completed" 
+          label="Mark as completed"></v-checkbox>
+
+        <v-card-actions>          
+          <v-btn
+            text="Cancel"
+            variant="plain"
+            @click="cancel()" 
+          ></v-btn>
+          <v-btn v-if="!promoEvent.txn.required"
+            text="Delete"
+            variant="plain"
+            @click="deleteTxn()"
+          ></v-btn>
+
+          <v-btn
+            text="Save"
+            variant="tonal"
+            @click="updatePromoDetails()" 
+          ></v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  `
+}
+
+

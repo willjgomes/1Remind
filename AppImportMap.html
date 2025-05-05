@@ -1,0 +1,24 @@
+<!--
+    Explnation of what an import map is: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap
+  -->
+  <script type="importmap">
+  {
+    "imports": {
+      "vue":                  "https://unpkg.com/vue@3.5.5/dist/vue.esm-browser.js",
+      "vue/server-renderer":  "https://cdn.jsdelivr.net/npm/@vue/server-renderer@3.5.5/dist/server-renderer.esm-browser.js",
+
+      "@vue/devtools-api":    "https://unpkg.com/@vue/devtools-api@6.4.5/lib/esm/index.js",
+      "vue/router":           "https://cdnjs.cloudflare.com/ajax/libs/vue-router/4.1.5/vue-router.esm-browser.min.js",
+      
+      "vuetify":              "https://unpkg.com/vuetify@3.7.2/dist/vuetify.esm.js",
+      "vlabs":                "https://unpkg.com/vuetify@3.7.2/dist/vuetify-labs.esm.js",
+      
+      "veevalidate":          "https://unpkg.com/vee-validate",
+
+      "vue-demi":             "https://cdn.jsdelivr.net/npm/vue-demi/lib/index.mjs",
+      "vuelidate/core":       "https://cdn.jsdelivr.net/npm/@vuelidate/core/dist/index.esm.js",
+      "vuelidate/validators": "https://cdn.jsdelivr.net/npm/@vuelidate/validators/dist/index.esm.js"
+    },
+    "scopes": {}
+  }      
+  </script>

@@ -1,0 +1,123 @@
+ // Component:    cpromoform
+ // Description:  Dialog for creating a new promotion
+ // Model:        createPromoShown variable to indicate if dialog is activated.
+ 
+const cpromoform = { 
+
+  components: {
+    cpromocreditform,
+    cpromobankform,
+  },
+
+  setup()     
+  {
+    const promoEventForm = reactive({
+      calId: "",
+      input: newPromoEventObject(),
+    });
+
+    function newPromoEventObject(){
+      return {companyName: "",
+      expireDate: null,
+      promoCategory: "Credit",    
+      offerType: "OPENING",       
+      offerValue: null ,
+      beginDate: null,
+      endDate: null,
+      firstDate: null,
+      thresholdAmt: null,
+      thresholdType: "NET",
+      numReqAllowTxns: 1,
+      minReqAmtPerTxn: 0,
+      durationDays: "90",}
+    }
+
+    const categories = ['Credit Card', 'Bank', 'Retail'];
+    const creditFormRef = ref(null);
+    const bankFormRef = ref(null);
+
+    function save(){
+      const type = promoEventForm.input.promoCategory;
+      if      (type === 'Credit' && creditFormRef.value) { creditFormRef.value.create(); }
+      else if (type === 'Bank'   && bankFormRef.value) { bankFormRef.value.create(); }
+    }
+
+    function reset(){
+      const type = promoEventForm.input.promoCategory;
+      if      (type === 'Credit' && creditFormRef.value) { creditFormRef.value.reset(); }
+      else if (type === 'Bank'   && bankFormRef.value) { bankFormRef.value.reset(); }
+    }
+
+    return {
+      createPromoShown,
+      promoEventForm,
+      reset,
+      save,
+      categories,
+      creditFormRef,
+      bankFormRef,
+    }
+  },
+
+  template: /*html*/ `
+    <v-dialog
+      v-model="createPromoShown"
+      persistent
+    >
+      <v-card
+        prepend-icon="mdi-seal-variant"
+        title="New Promotion"
+      >
+        <v-card-text>
+          <span>Category: </span>
+          <div class="d-flex justify-space-between pb-4">
+          <v-btn-toggle
+            v-model="promoEventForm.input.promoCategory"
+            color="primary"
+            mandatory
+            divided
+            variant="outlined"
+          >
+            <v-btn prepend-icon="mdi-credit-card-outline"  value="Credit" >Credit</v-btn>
+            <v-btn prepend-icon="mdi-bank-outline"  value="Bank" >Bank</v-btn>
+            <v-btn prepend-icon="mdi-store-outline"  value="Retail">Retail</v-btn>
+          </v-btn-toggle>
+          </div>
+
+          <template v-if="promoEventForm.input.promoCategory == 'Credit'">
+            <cpromocreditform v-model="promoEventForm" ref="creditFormRef"></cpromocreditform>
+          </template>
+          <template v-else-if="promoEventForm.input.promoCategory == 'Bank'">
+            <cpromobankform v-model="promoEventForm" ref="bankFormRef"></cpromobankform>
+          </template>
+
+          <small class="text-caption text-medium-emphasis">*indicates required field</small>
+        </v-card-text>
+
+        <v-divider></v-divider>
+
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            text="Cancel"
+            variant="plain"
+            @click="reset();createPromoShown=false" 
+          ></v-btn>
+
+          <v-btn
+            text="Clear"
+            variant="plain"
+            @click="reset()" 
+          ></v-btn>
+
+          <v-btn
+            color="primary"
+            text="Save"
+            variant="tonal"
+            @click="save()"           
+          ></v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    `
+}

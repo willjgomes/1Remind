@@ -1,0 +1,164 @@
+ // Component:    cbillform
+ // Description:  Dialog for creating a new bill
+ // Model:        createBillShown variable to indicate if dialog is activated.
+ 
+const cbillform = { 
+
+  setup()     
+  {
+    const eventForm = reactive({
+      calId: "",
+      payee: "",
+      dueDate: null,
+      dueDay: "",
+      monthly: true
+    });
+
+    //Custom Validators
+
+    //TODO: I could not get the requiredIf or required out-of-box vuelidators to work with custom function.
+    //Its possible they work, since I had my original conditional logic incorrectly return false when 
+    //field is not required so validation returns successfully.
+    //NOTE: To show a validation error, condition must evaluate to false, indicating "required" validation not met.
+    const requiredIfMonthly = (value) => ((helpers.req(value) && eventForm.monthly) || !eventForm.monthly);
+    const requiredIfOnce = (value) => ((helpers.req(value) && !eventForm.monthly) || eventForm.monthly);
+
+    const rules = {
+      payee:    { required: helpers.withMessage("Payee is required", required) },
+      dueDate:  { required: helpers.withMessage("Date is required", requiredIfOnce) },
+      dueDay:   { required: helpers.withMessage("Day is required", requiredIfMonthly) }
+    }
+
+    const v$ = useVuelidate(rules,eventForm)
+
+    function reset(){
+      eventForm.payee = '';
+      eventForm.dueDate = null;
+      eventForm.monthly = true;
+      eventForm.dueDay = '';
+      this.v$.$reset()
+    }
+
+    async function save(){
+      const isFormCorrect = await this.v$.$validate()
+
+      if (isFormCorrect){
+        eventForm.calId = appData.value.calendars.billCID;
+        await google.script.run.withSuccessHandler(() => console.log("Bill saved successfully!")).saveBill(eventForm);
+
+        //Setup last action top take appropriate refresh (not sure if this is the best way)
+        if (eventForm.dueDay != ''){
+          lastActionModel.value = h_getPeriodForDate(h_util_getMonthlyBillDate(eventForm.dueDay));
+        } else {
+          lastActionModel.value = h_getPeriodForDate(h_util_parseDate(eventForm.dueDate));
+        }
+        lastAction.value = 'newbillsaved'; // Must do this second or will trigger watch event
+        
+        createBillShown.value = false;
+      }      
+    }
+    
+    //TODO: Might be able to do this with computed property instead, but using watch for now.
+    watch(eventForm, (currentValue, oldValue) => {
+      //Clear the appropriate date field, depending on monthly option
+      if (currentValue.monthly){
+        eventForm.dueDate = null;
+      } else {
+        eventForm.dueDay = '';
+      }
+    })
+
+    return {
+      createBillShown,
+      eventForm,
+      reset,
+      save,
+      v$,
+      h_checkDigit
+    }
+  },
+
+  template: /*html*/ `
+    <v-dialog
+      v-model="createBillShown"
+      width="auto"
+      persistent
+    >
+      <v-card
+        prepend-icon="mdi-cash-check"
+        title="New Bill"
+      >
+        <v-card-text>
+          <v-textarea
+            label="Payee Name* "
+            placeholder="eg. Chase, Verizon"
+            clearable            
+            v-model="eventForm.payee"
+            :error-messages="v$.payee.$errors.map(e => e.$message)"
+            required
+            rows="1"
+            auto-grow
+            @blur="v$.payee.$touch"
+            @input="v$.payee.$touch"
+          >
+          </v-textarea>
+          <v-row no-gutters>
+            <v-col>
+              <v-switch
+                  v-model="eventForm.monthly"
+                  :label="'Occurs: ' + (eventForm.monthly == true ? 'Monthly':'Once')"
+                  hide-details
+                  inset
+              ></v-switch>
+            </v-col>
+            <v-col>
+              <v-text-field v-model="eventForm.dueDate"
+              label="Due Date"
+              required
+              :error-messages="v$.dueDate.$errors.map(e => e.$message)"
+              type="date"
+              v-show="!(eventForm.monthly == true)"
+              />
+              <v-text-field v-model="eventForm.dueDay"
+              label="Day Due"
+              required
+              :error-messages="v$.dueDay.$errors.map(e => e.$message)"              
+              v-show="(eventForm.monthly == true)"
+              maxlength="2"
+              type="number"
+              @keydown="h_checkDigit" 
+              />
+            </v-col>
+
+          </v-row>
+
+          <small class="text-caption text-medium-emphasis">*indicates required field</small>
+        </v-card-text>
+
+        <v-divider></v-divider>
+
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            text="Cancel"
+            variant="plain"
+            @click="reset();createBillShown=false" 
+          ></v-btn>
+
+          <v-btn
+            text="Clear"
+            variant="plain"
+            @click="reset()" 
+          ></v-btn>
+
+          <v-btn
+            color="primary"
+            text="Save"
+            variant="tonal"
+            @click="save()"           
+          ></v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    `
+}

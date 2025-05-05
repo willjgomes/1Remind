@@ -1,0 +1,64 @@
+// Component:    cpromocard
+// Description:  Expansion panel to display appoints as events
+// Model:        Promo Model Object {id:'',events:[]}
+
+ const cpromocards = { 
+  props: {
+    modelValue: {
+      type: Object,
+      default: () => {return {id:'',events:[]}}
+    },
+    title: {
+      type: String,
+      required: false,
+    },
+    datechip: {
+      type: String,
+      required: false,
+    }    
+  },
+  setup(props,{ emit }) {
+    const promoEvents = computed({
+      get: () => props.modelValue,
+      set: (value) => emit('update:modelValue', value), //Not sure if updating entire array is efficient
+    });
+
+    return {
+      promoEvents,
+      h_showDateHeader,
+      h_getDateLabel,
+    };
+  },
+
+  template: /*html*/ `
+    <v-expansion-panel>
+      <v-expansion-panel-title v-slot="{ expanded }">
+        <v-badge v-if="!expanded" :content="promoEvents.events.length" inline></v-badge>
+        {{title}}
+        <v-spacer></v-spacer>
+        <v-chip v-if="datechip" color="primary">
+          {{ datechip }}
+        </v-chip>
+        <v-icon  icon="mdi-calendar-plus" size="large" density="compact"></v-icon>
+      </v-expansion-panel-title>
+      <v-expansion-panel-text>
+        <template v-for="(event,index) in promoEvents.events">
+          <span v-if="h_showDateHeader(event, index, promoEvents.events) && !datechip" color="primary">  
+            <v-chip color="primary">
+              {{ h_getDateLabel(new Date(event.date)) }}
+            </v-chip>
+          </span>
+          <v-card color="cyan-accent-4" 
+              class="mt-2 mb-2 pa-2" border>
+            <v-card-title class="text-body-1 pa-0">
+              {{ event.summary }}
+            </v-card-title>
+          </v-card>
+        </template>
+        <v-card-text v-if="promoEvents.events.length == 0" >
+          No promotions ending.
+        </v-card-text>
+      </v-expansion-panel-text>
+    </v-expansion-panel>
+  `
+ }

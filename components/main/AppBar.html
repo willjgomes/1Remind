@@ -1,0 +1,73 @@
+<v-app-bar
+  color="teal-darken-4"
+  image="https://picsum.photos/1920/1080?random"
+  density="compact"
+>
+  <template v-slot:image>
+    <v-img
+      gradient="to top right, rgba(19,84,122,.8), rgba(128,208,199,.8)"
+    ></v-img>
+  </template>
+
+  <template v-slot:prepend>
+    <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
+  </template>
+
+  <v-app-bar-title class="grow">1Reminder</v-app-bar-title>
+
+  <v-spacer></v-spacer>
+<!--
+  <v-btn icon>
+    <v-icon>mdi-magnify</v-icon>
+  </v-btn>
+
+  <v-btn icon>
+    <v-icon>mdi-heart</v-icon>
+  </v-btn>
+
+  <v-btn icon>
+    <v-icon>mdi-dots-vertical</v-icon>
+  </v-btn>
+-->
+</v-app-bar>
+
+  <v-navigation-drawer  image="https://cdn.vuetifyjs.com/images/backgrounds/bg-2.jpg" color="primary" temporary v-model="drawer">
+
+    <v-list >
+          <v-list-item class="ml-1 pl-0">
+            <template v-slot:prepend>
+              <div class="avatar">{{(appData.userInfo.email ? appData.userInfo.email.substring(0,1):'')}}                
+              </div>
+            </template>
+            <v-list-item-content>
+            <!-- <v-list-item-title >Welcome</v-list-item-title> -->
+            <v-list-item-title>{{appData.userInfo.email}}</v-list-item-title>
+            </v-list-item-content>
+          </v-list-item>
+    </v-list>
+    <v-divider color="black" style="border-top-width: 3px;" ></v-divider>
+    <v-list>
+    
+      <v-list-item @click="router.push('/');">
+        <v-list-item-title>Agenda</v-list-item-title>
+      </v-list-item>
+      <v-list-item @click="router.push('/managebill')">
+        <v-list-item-title>Bills</v-list-item-title>
+      </v-list-item>
+      <v-list-item @click="router.push('/promotions')">
+        <v-list-item-title>Promotions</v-list-item-title>
+      </v-list-item>
+      <v-list-item @click="router.push('/comingsoon')">
+        <v-list-item-title>Task List</v-list-item-title>
+      </v-list-item>
+      <v-list-item @click="router.push('/comingsoon')">
+        <v-list-item-title>Shopping List</v-list-item-title>
+      </v-list-item>
+      <v-list-item @click="router.push('/calendar');">
+        <v-list-item-title>Calendar</v-list-item-title>
+      </v-list-item>      
+      <v-list-item @click="router.push('/about');">
+        <v-list-item-title>About</v-list-item-title>
+      </v-list-item>      
+    </v-list>
+  </v-navigation-drawer>  

@@ -1,0 +1,27 @@
+.progress-container {
+  display: flex;
+  gap: 2px;
+  justify-content: space-between;
+  width: 100%;
+  /* max-width: 300px; */   /* Commented this out to take width of surrounding container */
+}
+
+.progress-segment {
+  width: 200px;             /* Not sure this is the best way to ensure the segments expand to fill container*/
+  height: 10px;
+  background-color: #ddd;
+  border-radius: 5px;
+  transition: background-color 0.3s;
+}
+
+.progress-segment.completed {
+  background-color: #1976D2;  /* Need to align colors to work properly with veutify themes, etc */
+}
+
+.progress-segment.in-progress {
+  background-color: orange;
+}
+
+.progress-segment.not-started {
+  background-color: lightgray;
+}

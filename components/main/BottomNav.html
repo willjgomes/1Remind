@@ -1,0 +1,104 @@
+
+<v-bottom-navigation>
+  <v-btn value="refresh" @click="refreshView()">
+    <v-icon>mdi-refresh</v-icon>
+    <span>Refresh</span>
+  </v-btn>
+  <v-btn @click="createSelectShown = true">
+    <v-icon>mdi-calendar-plus</v-icon>
+    <span>New</span>
+  </v-btn>
+</v-bottom-navigation>
+
+
+ <v-dialog
+      v-model="savingShown"
+      max-width="320"
+      persistent
+    >
+      <v-list
+        class="py-2"
+        color="primary"
+        elevation="12"
+        rounded="lg"
+      >
+        <v-list-item
+          prepend-icon="mdi-content-save-outline"
+          title="Saving.."
+        >
+          <template v-slot:prepend>
+            <div class="pe-4">
+              <v-icon color="primary" size="x-large"></v-icon>
+            </div>
+          </template>
+
+          <template v-slot:append>
+            <v-progress-circular
+              color="primary"
+              indeterminate="disable-shrink"
+              size="16"
+              width="2"
+            ></v-progress-circular>
+          </template>
+        </v-list-item>
+      </v-list>
+    </v-dialog>
+
+<v-dialog 
+  v-model="createSelectShown"
+  width="auto"
+>
+
+
+<v-card class="mx-auto" elevation="1"  min-width="300">
+  <v-card-title class="py-5 font-weight-black d-flex justify-space-between align-center">
+    Create New
+    <v-btn icon="mdi-close" variant="text" @click="createSelectShown = false"></v-btn>
+  </v-card-title>
+
+  <v-card-text>
+    <v-btn
+      class="text-none mb-4"
+      color="teal-lighten-1"
+      size="x-large"
+      variant="flat"
+      block
+    >
+      Reminder
+    </v-btn>
+
+    <v-btn
+      class="text-none mb-4"
+      color="light-blue-lighten-1"
+      size="x-large"
+      variant="flat"
+      block
+    >
+      Appointment
+    </v-btn>
+
+    <v-btn
+      class="text-none mb-4"
+      color="red-lighten-1"
+      size="x-large"
+      variant="flat"
+      block
+      @click="createSelectShown=false;createBillShown=true"
+    >
+      Bill
+    </v-btn>
+
+    <v-btn
+      class="text-none mb-4"
+      color="green-lighten-1"
+      size="x-large"
+      variant="flat"
+      block
+      @click="createSelectShown=false;createPromoShown=true"
+    >
+      Promo
+    </v-btn>
+  </v-card-text>
+</v-card>
+
+</v-dialog>

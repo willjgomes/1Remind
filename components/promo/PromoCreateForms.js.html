@@ -1,0 +1,283 @@
+      
+// Create Promo Helper Function, this is outside a component so it can be used
+// by any of the promo types
+async function createPromo(promoEvent, validator){
+  const isFormCorrect = await validator.$validate()
+  
+  if (isFormCorrect){
+    const calId = appData.value.calendars.promoTCID;
+    await google.script.run.withSuccessHandler((event) => {
+      lastActionModel.value = event;
+      lastAction.value ="newpromoadded";
+      savingShown.value = false;
+      console.log("Promo created successfully!")
+    }).createPromo(calId, promoEvent);
+      
+    createPromoShown.value = false;
+    savingShown.value = true;
+  }      
+}
+
+// Update Promo Helper Function, this is outside a component so it can be used
+// by any of the promo types
+async function updatePromo(promoEvent, validator, dialogShown){
+  const isFormCorrect = await validator.$validate()
+
+  if (isFormCorrect){
+    const calId = appData.value.calendars.promoTCID;
+    await google.script.run.withSuccessHandler((event) => {
+      savingShown.value = false;
+      console.log("Promo updated successfully!")
+    }).updatePromo(calId, promoEvent);
+ 
+    savingShown.value = true;
+  }      
+
+}
+
+// ================================================================================
+// Component:    cpromocreditform
+// Description:  Credit Card Offer Creation Form
+// Model:        promoEvent
+// ================================================================================
+const cpromocreditform = { 
+  props: { modelValue: { type: Object } },
+
+  setup(props,{ emit }) {
+    const promoEvent = computed({
+      get: () => props.modelValue,
+      set: (value) => emit('update:modelValue', value),
+    });
+
+    const ccNewRules = {
+      input:{
+      companyName:  {required: helpers.withMessage("Name is required", required) },
+      offerValue:   {required},
+      thresholdAmt: {required},
+      }
+    }
+
+    const v$ = useVuelidate(ccNewRules,promoEvent.value)
+
+    function reset(){this.v$.$reset()}
+
+    function create(){createPromo(promoEvent.value.input, this.v$) }
+
+    function update(){updatePromo(promoEvent.value, this.v$) }
+
+    return {
+      createPromoShown,
+      savingShown,
+      promoEvent,
+      reset,
+      create,
+      update,
+      v$,
+    };
+  },
+
+  template: /*html*/ `
+    <v-radio-group 
+      v-model="promoEvent.input.offerType"
+      inline
+      :disabled="promoEvent.editShown"
+      >
+      <v-radio label="Opening Offer" value="OPENING"></v-radio>
+      <v-radio label="Other Offer" value="SPEND"></v-radio>
+    </v-radio-group>
+
+    <v-textarea
+      label="Credit Card Name "
+      placeholder="eg. Chase, T-Mobile"
+      clearable            
+      v-model="promoEvent.input.companyName"
+      :error-messages="v$.input.companyName.$errors.map(e => e.$message)"
+      required
+      rows="1"
+      auto-grow
+      @blur="v$.input.companyName.$touch"
+      @input="v$.input.companyName.$touch"
+    >
+    </v-textarea>
+
+    <v-text-field
+      v-model="promoEvent.input.offerValue"
+      :error-messages="v$.input.offerValue.$errors.map(e => e.$message)"
+      label="Offer Amount"
+      prefix="$"
+      prepend-inner-icon="mdi-gold"
+      required
+      type="number"
+    ></v-text-field>
+    <v-text-field
+      v-model="promoEvent.input.thresholdAmt"
+      :error-messages="v$.input.thresholdAmt.$errors.map(e => e.$message)"              
+      label="Spend Amount"
+      prefix="$"
+      prepend-inner-icon="mdi-shopping"
+      required
+      type="number"
+    ></v-text-field>
+
+    <v-text-field
+      v-model="promoEvent.input.expireDate"
+      label="Signup Expire Date"              
+      type="date"
+      hint="Last day to signup for account"
+    ></v-text-field>
+
+    <v-text-field
+      v-model="promoEvent.input.beginDate"
+      label="Account Open Date"
+      type="date"
+    ></v-text-field>
+
+    <v-radio-group 
+      v-model="promoEvent.input.durationDays"
+      label="Spend Time (Months)" 
+      inline>
+      <v-radio label="3" value="90"></v-radio>
+      <v-radio label="4" value="120"></v-radio>
+      <v-radio label="6" value="180"></v-radio>
+      <v-radio label="12" value="365"></v-radio>
+    </v-radio-group>
+  `
+}
+
+// ================================================================================
+// Component:    cpromobankform
+// Description:  Bank Offer Creation Form
+// Model:        promoEvent
+// ================================================================================
+const cpromobankform = { 
+  props: { modelValue: { type: Object } },
+
+  setup(props,{ emit }) {
+    const promoEvent = computed({
+      get: () => props.modelValue,
+      set: (value) => emit('update:modelValue', value),
+    });
+
+    //NOTE: To show a validation error, condition must evaluate to false, indicating "required" validation not met.
+    const requiredEndDate = (value) => (promoEvent.value.input.expireDate || promoEvent.value.input.endDate);
+
+    const bankNewRules = {
+      input:{
+      companyName:  {required: helpers.withMessage("Bank name required", required) },
+      offerValue:   {required: helpers.withMessage("Bonus amount offered required", required)},
+      expireDate:   {required: helpers.withMessage("Signup or Completion date required", requiredEndDate)},
+      endDate:      {required: helpers.withMessage("Signup or Completion date required", requiredEndDate)},
+      }
+    }
+
+    const v$ = useVuelidate(bankNewRules,promoEvent.value)
+
+    function reset(){this.v$.$reset()}
+
+    function create(){createPromo(promoEvent.value.input, this.v$) }
+
+    function update(){updatePromo(promoEvent.value, this.v$) }
+
+    return {
+      createPromoShown,
+      savingShown,
+      promoEvent,
+      reset,
+      create,
+      update,
+      v$,
+    };
+  },
+
+  template: `
+    <v-textarea
+      label="Bank Name "
+      placeholder="eg. Ally, Chase "
+      clearable            
+      v-model="promoEvent.input.companyName"
+      :error-messages="v$.input.companyName.$errors.map(e => e.$message)"
+      required
+      rows="1"
+      auto-grow
+      @blur="v$.input.companyName.$touch"
+      @input="v$.input.companyName.$touch"
+    >
+    </v-textarea>
+
+    <v-text-field
+      v-model="promoEvent.input.offerValue"
+      :error-messages="v$.input.offerValue.$errors.map(e => e.$message)"
+      label="Offer Amount"
+      prefix="$"
+      prepend-inner-icon="mdi-gold"
+      required
+      type="number"
+    ></v-text-field>
+
+    <v-radio-group     
+      v-model="promoEvent.input.thresholdType"
+      label="Deposit Activity Requirments"
+      inline>      
+      <v-radio label="Single or Net Deposit" value="NET"></v-radio>
+      <v-radio label="Multiple Deposits" value="MULTIPLE"></v-radio>
+    </v-radio-group>
+
+    <v-text-field v-if="promoEvent.input.thresholdType == 'NET'"
+      v-model="promoEvent.input.thresholdAmt"
+      label="Total Deposit Amount"
+      prefix="$"
+      prepend-inner-icon="mdi-piggy-bank"
+      required
+      type="number"
+      hint="Single or net total deposits needed for promo"      
+    ></v-text-field>
+
+    <v-text-field v-if="promoEvent.input.thresholdType == 'MULTIPLE'"
+      v-model="promoEvent.input.numReqAllowTxns"
+      label="Number of Deposits"
+      prepend-inner-icon="mdi-repeat"
+      required
+      type="number"
+    ></v-text-field>
+
+    <v-text-field v-if="promoEvent.input.thresholdType == 'MULTIPLE'"
+      v-model="promoEvent.input.minReqAmtPerTxn"
+      label="Min Deposit Amount"
+      prefix="$"
+      prepend-inner-icon="mdi-piggy-bank"
+      required
+      type="number"
+      hint="Amount required for each deposit"      
+    ></v-text-field>
+
+    <v-text-field
+      v-model="promoEvent.input.expireDate"
+      :error-messages="v$.input.expireDate.$errors.map(e => e.$message)"
+      label="Signup Expire Date"              
+      type="date"
+      hint="Last day to signup for account"
+    ></v-text-field>
+
+    <v-text-field
+      v-model="promoEvent.input.beginDate"
+      label="Account Open Date"
+      type="date"
+    ></v-text-field>
+
+    <v-text-field
+      v-model="promoEvent.input.firstDate"
+      label="1st Activity Completion Date"
+      type="date"
+      hint="Last day to make opening/initial deposit."      
+    ></v-text-field>
+
+    <v-text-field
+      v-model="promoEvent.input.endDate"
+      :error-messages="v$.input.endDate.$errors.map(e => e.$message)"
+      label="All Activities Completion Date"
+      type="date"
+      hint="Last day to complete all requred activites."      
+    ></v-text-field>
+
+  `
+}

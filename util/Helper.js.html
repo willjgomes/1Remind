@@ -1,0 +1,191 @@
+function h_showDateHeader(event, index, events){
+  return h_showDateHeaderOffset(event, index, events, 1);
+}
+
+//The index offset indicates which previous item to check for date comparison
+//if there are items being hidden, the offset would be higher, eg expired or paid events
+function h_showDateHeaderOffset(event, index, events, indexOffset){
+  if (index == 0) return true;
+
+  const dateStr1 = event.date.substring(0,10);     
+  const dateStr2 = events[index-indexOffset].date.substring(0,10);
+
+  //console.log(event.summary + ': ' + dateStr1 + " " + events[index-indexOffset].summary + ": " + dateStr2);
+
+  return dateStr1 !== dateStr2;
+
+}
+
+function h_copyObject(source, target, full){
+  for (const key of Object.keys(source)) {
+      if (key in target || full) {
+          target[key] = source[key];
+      }
+  }
+  console.log("Copy Source: " + JSON.stringify(target));
+  console.log("Copy Target: " + JSON.stringify(target));
+}
+
+function h_getDateLabel(date){
+  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  
+  let dString = date.toLocaleString();
+  dString = dString.substring(0,dString.lastIndexOf('/'));
+  dString = daysOfWeek[date.getDay()] + ' ' + dString;        
+
+  return dString;
+}
+
+//TODO: Need to test UTC craziness
+function h_getAutoPaidDate(billDueDate, billAutoDay){
+  const autoPaidDate = new Date();
+  const dueDate = new Date(billDueDate);
+
+  autoPaidDate.setDate(+billAutoDay);
+  if (autoPaidDate.getDate() > dueDate.getDate()){
+    autoPaidDate.setMonth(dueDate.getMonth()-1)
+  }
+
+  return autoPaidDate.toLocaleString('en-CA').substring(0,10);
+}
+
+const h_checkDigit = (event) => {
+  if (event.key.length === 1 && isNaN(Number(event.key))) {
+    event.preventDefault();
+  }
+};
+
+function h_getPeriodForDate(date) {
+  //Create date without time component
+  const resetTime = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  
+  const today = resetTime(new Date());
+  
+  let period = '';
+  
+  //Get tomorrow's date
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+
+  if (today.getTime() === date.getTime()) {
+    period = 'today';
+  } else if (tomorrow.getTime() === date.getTime()) {
+    period = 'tomorrow';
+  } else {
+    // Get the start of the current week (Sunday)
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+
+    // Get the end of the current week (Saturday)
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    // Get the start of next week (Sunday)
+    const startOfNextWeek = new Date(endOfWeek);
+    startOfNextWeek.setDate(endOfWeek.getDate() + 1);
+
+    // Get the end of next week (Saturday)
+    const endOfNextWeek = new Date(startOfNextWeek);
+    endOfNextWeek.setDate(startOfNextWeek.getDate() + 6);
+
+    //WARNING WARNING: I had heck of time debugging this but using a less operator causes issues, 
+    //i think it might be interfering with the html tag, might need to use CDATA tags
+
+    // Check the date against the ranges
+    if (date >= startOfWeek && endOfWeek >= date) {
+      return 'thisweek';
+    } else if (date >= startOfNextWeek && endOfNextWeek >= date) {
+      return 'nextweek';
+    }
+  }
+
+  return period; 
+}
+
+  
+//This is the same function as the one in Utility.gs
+function h_util_parseDate(dateString){
+    //TODO: Find better way to parse date, this feels hacky
+    const year = +dateString.substring(0, 4);
+    const month = +dateString.substring(5, 7);
+    const day = +dateString.substring(8, 10);
+    //throw Error(year + " " + month + " " + day + " " + eDate);
+
+    return new Date(year, month - 1, day);
+}
+
+function h_util_getMonthlyBillDate(day){
+  var now = new Date();
+  var month = now.getMonth(); 
+  var year  = now.getFullYear()
+
+  if (now.getDate() > day){
+    // If current month is Dec (11), reset to Jan (0), otherwise set to next month (+1)
+    month = (month == 11 ? 0:month + 1);
+  }
+
+  //return day + " " + month + " " + year;
+  return new Date(year, month, day)
+}
+
+
+//This takes the model value from the last action (the recently saved event), 
+//and adds it to the events model. Resort the events model using the active
+//comprator for the view. Using reference to the v-card of the newly
+//added event it scrolls it into view and blinks.
+async function h_updateEventsModelAndBlinkCardOnSave(eventsModel, comparator, cardRefs){
+
+    const event = lastActionModel.value;
+    eventsModel.push(event);
+    eventsModel.sort(comparator);
+
+    // Ensure the DOM is updated after the mutation of eventsModel. This waits
+    // newly saved event to be rendered as a v-card, otherwise it will fail to
+    // find the card.
+    await nextTick();
+
+    // Scroll to the card
+    h_scrollToCard(cardRefs, event);
+
+    //reset the view model
+    lastAction.value = '';
+    lastActionModel.value = '';   
+}     
+
+function h_scrollToCard(cardRefs, event) {
+  // Get the ref for the specific card, the .$el is needed to get the raw DOM element
+  //so we can call the scrollIntoView element,vue elements don't provide this method.
+  const cardRef = cardRefs.value[`${event.id}`]?.$el; 
+  console.log(" eventId: " + event.id);
+
+  // Scroll to the card
+  if (cardRef) {
+    cardRef.scrollIntoView({ behavior: 'auto', block: 'center' }); 
+  }
+
+  //Set the card models blinking to true 
+  //(TODO: Look into setting directly on the cardRef instead of )
+  event.isBlinking = true;
+}
+
+// h_setRef: A function that takes in an event id and a DOM reference map to create an anonymous 
+// function to store the DOM element in the reference map using event id as lookup key
+//
+// Use with the Vue :ref directive (which allows progamattic access to the DOM element
+// such as the v-card). Typically one sets a custom function taking in a element argument
+// on the ref attribute, so additional element processing can be done. In this case the 
+// addtional processing is simply storing the element in our components dom reference map.
+//
+// This approach is needed to store our own refrences to the elements when using composition API.
+// The Options API there is a simpler way to store and acess the refs. The ref is being
+// so we can scroll to a newly added element (eg. event v-card) for visual feedback of a newly
+// saved element.
+const h_setRef = (id,DOMRefs) => {
+  return (el) => {
+    if (el) {
+      DOMRefs[`${id}`] = el;
+    }
+  };
+};
+
+

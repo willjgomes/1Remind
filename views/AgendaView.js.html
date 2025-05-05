@@ -1,0 +1,177 @@
+const agendaview = {
+  name: 'AgendaView',
+
+  components: {
+    cbillexppanel,
+    capptcards,
+    cpromocards,
+  },
+
+  setup() {
+
+    //This creates the model to hold all the events for the agenda tab viewss
+    function createTabViewModel(period){
+      let dLabel = '';
+      if (period == 'today'){
+        dLabel = h_getDateLabel(new Date());
+      } else if (period == 'tomorrow'){
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        dLabel = h_getDateLabel(tomorrow);
+      }
+
+      return {
+        data: {
+          bills:   {id:'',events:[]},
+          appts:   {id:'',events:[]},
+          promos:  {id:'',events:[]},
+        },
+        loaded:   false,
+        dateLabel: dLabel
+      }
+    }
+
+    // Tab View Model for each tab time period
+    const eToday    = reactive(createTabViewModel('today'));
+    const eTomorrow = reactive(createTabViewModel('tomorrow'));
+    const eThisWeek = reactive(createTabViewModel('thisweek'));
+    const eNextWeek = reactive(createTabViewModel('nextweek'));
+
+    const tab = ref('today');               //The current Tab View        
+    const panels = reactive({               //Which expansion panels to open by default
+      today:    [0,1],
+      tomorrow: [0,1],
+      thisweek: [0,1],
+      nextweek: [0,1]
+    });
+
+
+    async function getEvents(period) {
+      console.log("Fetching all events for: " + period);        
+      if (period == 'today'){
+        eToday.loaded = false;
+        google.script.run.withSuccessHandler(
+          (data) => {eToday.data=JSON.parse(data);eToday.loaded = true;}).getEventsModel(period);
+      } else if (period == 'tomorrow'){
+        eTomorrow.loaded = false;
+        google.script.run.withSuccessHandler(
+          (data) => {eTomorrow.data=JSON.parse(data); eTomorrow.loaded = true;}).getEventsModel(period);
+      } else if (period == 'thisweek'){
+        eThisWeek.loaded = false;
+        google.script.run.withSuccessHandler(
+          (data) => {eThisWeek.data=JSON.parse(data); eThisWeek.loaded = true;}).getEventsModel(period);
+      } else if (period == 'nextweek'){
+        eNextWeek.loaded = false;
+        google.script.run.withSuccessHandler(
+          (data) => {eNextWeek.data=JSON.parse(data); eNextWeek.loaded = true;}).getEventsModel(period);
+      }
+    }
+
+    function refresh(){
+      getEvents(tab.value);
+    }
+
+    //Watch for tab switch and load data if not already loaded
+    watch(tab, (currentValue, oldValue) => {        
+      if  ((currentValue == 'tomorrow' && !eTomorrow.loaded) 
+      ||  (currentValue == 'thisweek' && !eThisWeek.loaded)
+      ||  (currentValue == 'nextweek' && !eNextWeek.loaded)) {
+        getEvents(currentValue);
+      } 
+    })
+
+    //This is an ugly way of refreshing a tab for which the newly saved bill might have been added
+    watch(lastAction, (currentValue, oldValue) => {
+      console.log('Last Action: [' + currentValue + '][' + lastActionModel.value +']')
+      if (['newbillsaved','billdeleted'].includes(currentValue)){
+        const func = getEvents.bind(null,lastActionModel.value);
+        setTimeout(func,2000);
+        lastAction.value = '';
+        lastActionModel.value = '';        
+      } 
+    })
+
+    onMounted(() => {
+      getEvents('today');
+    })
+    
+    //Do not initialze data here when using Composition API
+    return {
+      tab,
+      createBillShown,       //This is used in bottom nav component
+      getEvents,
+      refresh,
+      eToday,
+      eTomorrow,
+      eThisWeek,
+      eNextWeek,
+      panels,
+    }
+
+  },
+
+  template:`
+    <v-tabs
+      v-model="tab" 
+      align-tabs="title"
+      bg-color="indigo"
+      center-active
+    >
+      <v-tab
+        key="yesterday"
+        text="Yesterday"
+        value="yesterday"
+      ></v-tab>
+      <v-tab
+        key="today"
+        text="Today"
+        value="today"
+      ></v-tab>
+      <v-tab
+        key="tomorrow"
+        text="Tomorrow"
+        value="tomorrow"
+      ></v-tab>
+      <v-tab v-if="(new Date().getDay() < 5)"
+        key="thisweek"
+        text="Rest of Week"
+        value="thisweek"
+      ></v-tab>
+      <v-tab
+        key="nextweek"
+        text="Next Week"
+        value="nextweek"
+      ></v-tab>
+    </v-tabs>
+    <v-tabs-window v-model="tab">
+      <v-tabs-window-item key="today" value="today">
+        <v-expansion-panels  multiple v-model="panels.today">
+          <capptcards v-model="eToday.data.appts" title="Appointments" :loading="!eToday.loaded" :datechip="eToday.dateLabel"></capptcards>
+          <cbillexppanel v-model="eToday.data.bills" title="Bills" :loading="!eToday.loaded" :datechip="eToday.dateLabel"></cbillexppanel>
+          <cpromocards v-model="eToday.data.promos" title="Promotions" :loading="!eToday.loaded" :datechip="eToday.dateLabel"></cpromocards>
+        </v-expansion-panels>
+      </v-tabs-window-item>
+      <v-tabs-window-item key="tomorrow" value="tomorrow">
+        <v-expansion-panels  multiple v-model="panels.tomorrow">
+          <capptcards v-model="eTomorrow.data.appts" title="Appointments" :loading="!eTomorrow.loaded" :datechip="eTomorrow.dateLabel"></capptcards>
+          <cbillexppanel v-model="eTomorrow.data.bills" title="Bills" :loading="!eTomorrow.loaded" :datechip="eTomorrow.dateLabel"></cbillexppanel>
+          <cpromocards v-model="eTomorrow.data.promos" title="Promos" :loading="!eTomorrow.loaded" :datechip="eTomorrow.dateLabel"></cpromocards>
+        </v-expansion-panels>                  
+      </v-tabs-window-item>
+      <v-tabs-window-item key="thisweek" value="thisweek">
+        <v-expansion-panels  multiple v-model="panels.thisweek">
+          <capptcards v-model="eThisWeek.data.appts" title="Appointments" :loading="!eThisWeek.loaded" ></capptcards>
+          <cbillexppanel v-model="eThisWeek.data.bills" title="Bills" :loading="!eThisWeek.loaded"></cbillexppanel>
+          <cpromocards v-model="eThisWeek.data.promos" title="Promos":loading="!eThisWeek.loaded"></cpromocards>
+        </v-expansion-panels>                  
+      </v-tabs-window-item>
+      <v-tabs-window-item key="nextweek" value="nextweek">
+        <v-expansion-panels  multiple v-model="panels.nextweek">
+          <capptcards v-model="eNextWeek.data.appts" title="Appointments" :loading="!eNextWeek.loaded"></capptcards>
+          <cbillexppanel v-model="eNextWeek.data.bills" title="Bills" :loading="!eNextWeek.loaded"></cbillexppanel>
+          <cpromocards v-model="eNextWeek.data.promos" title="Promos" :loading="!eNextWeek.loaded"></cpromocards>            
+        </v-expansion-panels>                  
+      </v-tabs-window-item>
+    </v-tabs-window>
+  `
+}

@@ -1,0 +1,283 @@
+// Component:    cbillcard
+// Description:  Expansion panel to display bills as events
+// Model:        Bill Object {id:'',events:[]}
+   
+// TODO: I don't fully understand how the props and emits work, the vue docs and ChatGPT 
+//       led me astray.  The solution I'm using is based on this StackOverflow question
+//       https://stackoverflow.com/questions/64775876/vue-3-pass-reactive-object-to-component-with-two-way-binding
+ const cbillcards = {
+
+  props: {
+    modelValue: {
+      type: Object,
+      default: () => {return {id:'',events:[]}}
+    },
+    datechip: {
+      type: String,
+      required: false,
+    },
+    options: {
+      type: Object,
+      default: () => { 
+        return {
+          showDetails: false,
+          sortKey: 'date',
+          showPaid: true,
+        }
+      },
+      required: false,
+    },    
+  },
+  components: {
+    cbillpayedit,
+    cbilldeleteconfirm,
+  },
+  setup(props,{ emit }) {
+    const billEvents = computed({
+      get: () => props.modelValue,
+      set: (value) => emit('update:modelValue', value), //Not sure if updating entire array is efficient
+    });
+
+    const billEvent = reactive({
+      original: {payee:'',payStatus:'',paidDate:'',payType:'', autoDay:''},
+      input: {},
+      calId: '',
+      payEditShown: false,
+      deleteConfirmShown: false,
+    });
+
+    //References to each event v-card element
+    const cardRefs = ref({});
+
+    //TODO: Don't allow scheduled or automated payments to be verified if the scheduled ate is not today or passed.
+    const billPayAction = (calId, event) => {         
+      const today = (new Date()).toLocaleString('en-CA');  
+      console.log("Bill Action" + event.details.status + "" + event.id);
+      if (!['PAID','VERIFIED'].includes(event.details.payStatus)){            //If status was not paid or if scheduled pay not verified
+        if (!event.details.payType || event.details.payType == ''){
+          //Pay type is empty, so mark as PAID MANUALLY with todays date
+          event.details.paidDate = today.substring(0,10);         //Gives date in YYYY-MM-DD format (commonly used in Canda)
+          event.details.payType = 'MANUAL';
+          event.details.payStatus = 'PAID'
+        } else if (['SCHEDULED', 'AUTO'].includes(event.details.payType)) {
+          event.details.payStatus = 'VERIFIED';
+          if (event.details.payType == 'AUTO'){
+            event.details.paidDate = h_getAutoPaidDate(event.startTime, event.details.autoDay);
+          } 
+        }
+      } else {
+        event.details.payStatus = ''
+        if (event.details.payType == 'MANUAL'){ 
+          event.details.paidDate = ''
+          event.details.payType = ''
+        }        
+      }
+
+      google.script.run.withSuccessHandler((data) => {console.log("Successful GS.updateBillDetails")}).
+        updateBillDetails(calId, event);
+    }
+
+    function billPayEditClick(calId, event){
+      if (event.payType == ''){
+        event.payType = 'MANUAL'
+      }     
+
+      billEvent.calId = calId;
+      
+      //Assign bill details to model used for input fields
+      billEvent.input = event;
+
+      //Copy bill dettails to original fields in case of canceel
+      billEvent.original.payType = event.details.payType;
+      billEvent.original.paidDate = event.details.paidDate;
+      billEvent.original.payStatus = event.details.payStatus;
+      billEvent.original.autoDay = event.details.autoDay;
+      
+      billEvent.payEditShown = true;
+    }
+
+    function billDeleteClick(calId, event){
+      billEvent.calId = calId;
+
+      //Just assign bill details to input fields, as no fields will be changed
+      billEvent.input = event;
+      
+      //Show confirm  dialog
+      billEvent.deleteConfirmShown = true;
+    }
+
+    function getDayCounterLabel(date){
+      let counterLabel = '';
+
+      if (props.options.showDetails){
+        const today = new Date();
+        if (date.getDate() === today.getDate()){
+          counterLabel = " DUE TODAY!!"
+        } else if (date.getDate() === (today.getDate() + 1)){
+          counterLabel = " DUE TOMORROW!"
+        } else if (date.getTime() > today.getTime()){
+          const timeDiff = date - today;
+          const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) - 1; 
+
+          counterLabel = " in " + daysLeft + " DAY" + (daysLeft > 1 ? "S":"");
+        } 
+      }
+
+      return counterLabel;
+    }
+
+    function getChipColor(date){
+      if (props.options.showDetails){
+        const today = new Date();
+        if (date.getDate() === today.getDate() && date.getMonth() === today.getMonth()){
+          return 'red-darken-4'
+        } else if (date.getDate() === (today.getDate() + 1) && date.getMonth() === today.getMonth()){
+          return 'green'
+        } 
+      }
+
+      return 'primary';
+    }
+
+    function getFontWeight(date){
+      if (props.options.showDetails){
+        const today = new Date();
+        if (date.getDate() === today.getDate() && date.getMonth() === today.getMonth()){
+          return 'font-weight-bold'
+        } else if (date.getDate() === (today.getDate() + 1) && date.getMonth() === today.getMonth()){
+          return 'font-weight-bold'
+        } 
+      }
+
+      return '';
+    }
+
+    function getDetailsText(event){
+      let text = '';
+
+      if (props.options.sortKey == 'title'){
+        text = 'DUE: ' + event.date.substring(0, 5) + " " + getDayCounterLabel(new Date(event.date));
+      } else if (event.details.payStatus == 'SKIPPED'){
+        text = 'No Payment Due';
+      } else if (['AUTO','SCHEDULED'].includes(event.details.payType)){
+        text = 'Scheduled: ';
+        const today = new Date();
+        if (event.details.autoDay != ''){
+          text += `${(today.getMonth() + 1)}/${event.details.autoDay}`
+        } else {
+          text += event.details.paidDate.substring(5,10);
+        } 
+      } else if (event.details.payStatus == 'PAID'){
+          text = 'Paid: ' + event.details.paidDate.substring(5,10);
+      } 
+      return text;
+    }
+
+    function isBillPaid(event){
+      return ['PAID','VERIFIED','SKIPPED'].includes(event.details.payStatus)
+          || ['AUTO','SCHEDULED'].includes(event.details.payType);
+    }
+
+    function showBillDateHeader(event, index, events){
+      if (!props.options.showPaid && isBillPaid(event)){
+        //No need to worry about header if this bill is not being shown
+        return false;
+      }
+
+      let indexOffset = 1; 
+      if (!props.options.showPaid){
+        //Find the indexOffset to determine last bill not paid
+         while ((index - indexOffset) > 0 && isBillPaid(events[index - indexOffset])){
+            indexOffset++;
+        }
+      }
+
+      return h_showDateHeaderOffset(event, index, events, indexOffset);
+    }
+
+    return {
+      billEvents,
+      billEvent,
+      billPayAction,
+      billPayEditClick,
+      billDeleteClick,
+      cardRefs,
+      h_showDateHeader,
+      h_getDateLabel,
+      h_setRef,
+      getDayCounterLabel,
+      getDetailsText,
+      getChipColor,
+      getFontWeight,
+      isBillPaid,
+      showBillDateHeader,
+    };
+  },
+
+  template: /*html*/ `
+    
+    <template v-for="(event,index) in billEvents.events">
+      <span v-if="showBillDateHeader(event, index, billEvents.events) && !datechip" >  
+        <v-chip v-if="options.sortKey=='date'" :class="getFontWeight(new Date(event.date))">
+          {{ h_getDateLabel(new Date(event.date)) }} {{getDayCounterLabel(new Date(event.date))}}
+        </v-chip>
+      </span>
+      <v-card v-if="options.showPaid || !isBillPaid(event)"
+        :color="isBillPaid(event) ? 'deep-orange-lighten-4':'deep-orange-lighten-1'"
+        class="mt-2 mb-2 pa-2"  
+        border
+        :class="{ blink: event.isBlinking }"
+        :ref="h_setRef(event.id, cardRefs)"
+        >
+        <!-- Not sure what d-flex does, but without it the menu icon, went to next line -->
+        <v-card-title class="text-body-1 pa-0 d-flex aligh-center" :class="(event.details.payStatus=='' ? '':'text-disabled')">
+          <span>
+              <v-btn icon flat @click="billPayAction(billEvents.id, event)" density="compact" color="transparent" class="pl-2 pr-2">
+                <v-icon v-if="event.details.payStatus == 'PAID'" icon="mdi-checkbox-marked-circle-outline" size="large" color="green" density="compact"></v-icon>
+                <v-icon v-else-if="event.details.payStatus == 'VERIFIED'" icon="mdi-check-circle-outline" size="large" color="green" density="compact"></v-icon>
+                <v-icon v-else-if="event.details.payType == 'AUTO'" icon="mdi-update" density="compact" size="large" color="red">
+                </v-icon>                    
+                <v-icon v-else-if="event.details.payType == 'SCHEDULED'" icon="mdi-clock-check-outline" size="large" color="red"  
+                    density="compact"></v-icon>
+                <v-icon v-else-if="event.details.payStatus == 'SKIPPED'" icon="mdi-arrow-right-thin-circle-outline" size="large" color="green"  
+                    density="compact"></v-icon>
+                <v-icon v-else icon="mdi-clock-alert-outline" size="large" density="compact"></v-icon>
+              </v-btn>               
+              {{ event.summary }}  
+          </span>
+
+          <v-spacer></v-spacer>                  
+          
+          <v-menu class="ma-0 pa-0">
+            <template v-slot:activator="{ props }">
+              <v-btn icon="mdi-dots-vertical" density="compact" variant="text" v-bind="props"></v-btn>
+            </template>
+
+            <v-list>
+              <v-list-item >
+                <v-icon @click="" class="text-disabled">mdi-pencil-outline</v-icon>
+              </v-list-item>
+              <v-list-item >
+                <v-icon @click="billPayEditClick(billEvents.id, event)">mdi-calendar-clock-outline</v-icon>
+              </v-list-item>
+              <v-list-item >
+                <v-icon @click="billDeleteClick(billEvents.id, event)">mdi-trash-can-outline</v-icon>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </v-card-title>     
+        <v-card-subtitle>
+          {{getDetailsText(event)}}
+        </v-card-subtitle>        
+      </v-card>
+      <v-card v-else>
+      </v-card>
+    </template>
+    <v-card-text v-if="billEvents.events.length == 0" >
+      Good news, you have no bills due today!
+    </v-card-text>
+
+    <cbillpayedit v-model="billEvent"></cbillpayedit>
+    <cbilldeleteconfirm v-model="billEvent"></cbilldeleteconfirm>
+  `
+}

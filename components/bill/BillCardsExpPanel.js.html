@@ -1,0 +1,65 @@
+// Component:    cbillcard
+// Description:  Expansion panel to display bills as events
+// Model:        Bill Object {id:'',events:[]}
+   
+// TODO: I don't fully understand how the props and emits work, the vue docs and ChatGPT 
+//       led me astray.  The solution I'm using is based on this StackOverflow question
+//       https://stackoverflow.com/questions/64775876/vue-3-pass-reactive-object-to-component-with-two-way-binding
+ const cbillexppanel = {
+
+  components: {
+    cbillcards,
+  },  
+
+  props: {
+    modelValue: {
+      type: Object,
+      default: () => {return {id:'',events:[]}}
+    },
+    title: {
+      type: String,
+      required: false,
+    },
+    datechip: {
+      type: String,
+      required: false,
+    },
+    loading: {
+      type: Boolean,
+      default: false,
+      required: false,
+    }
+  },
+
+  setup(props,{ emit }) {
+    const billEvents = computed({
+      get: () => props.modelValue,
+      set: (value) => emit('update:modelValue', value), //Not sure if updating entire array is efficient
+    });
+
+    return {
+      billEvents,
+      createBillShown,
+    };
+  },
+
+  template: /*html*/ `
+    <v-expansion-panel>
+      <v-expansion-panel-title v-slot="{ expanded }">
+        <v-badge v-if="!expanded" :content="billEvents.events.length" inline></v-badge>        
+        {{ title }}
+        <v-spacer></v-spacer>
+        <v-chip v-if="datechip" color="primary">
+          {{ datechip }}
+        </v-chip>
+        <v-icon  icon="mdi-calendar-plus" size="large" @click.native.stop="createBillShown = true" density="compact"></v-icon>
+      </v-expansion-panel-title>
+      <v-expansion-panel-text v-if="loading">
+          <v-progress-circular indeterminate></v-progress-circular>
+      </v-expansion-panel-text>
+      <v-expansion-panel-text v-else>                 
+        <cbillcards v-model="billEvents" :datechip="datechip"></cbillcards>
+      </v-expansion-panel-text>
+    </v-expansion-panel>
+  `
+}

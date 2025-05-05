@@ -1,0 +1,96 @@
+              <v-expansion-panel>
+                <v-expansion-panel-title >
+                  Appointments
+                  <v-spacer></v-spacer>
+                  <v-icon  icon="mdi-calendar-plus" size="medium" @click.native.stop="" density="compact"></v-icon>
+                </v-expansion-panel-title>
+                <v-expansion-panel-text>  
+
+  <v-timeline  side="end" truncate-line="both" density="compact">
+    <v-timeline-item
+      dot-color="grey"
+      size="x-small"
+      v-for="event in events.data.appts"
+    >
+<!--
+      <template v-slot:opposite>
+        <div class="flex-shrink-0">{{ event.time }}</div>
+      </template>
+      <div class="d-flex justify-space-between flex-grow-1">
+        <div>{{ event.summary }}</div>
+      </div>
+-->
+
+      <template v-slot:opposite>
+        <span>12:00 PM</span>
+      </template>
+
+      <v-card color="blue-lighten-1"class="mb-2 pa-2" max-width border>
+        Testing Testing Testing {{ event.summary }}
+      </v-card>
+<!--
+      <template v-slot:opposite>
+        <span> 12 PM </span>
+      </template>
+      <div class="d-flex justify-space-between flex-grow-1">
+        <div>
+          <strong> Appointmanet Name is this lets go {{ event.summary }}</strong>
+          <div class="text-caption mb-2">
+            {{ event.start }}
+          </div>
+        </div>
+      </div>
+    </v-timeline-item>
+-->    
+<!--
+    <v-timeline-item
+      dot-color="green"
+      size="x-small"
+    >
+      <div class="d-flex">
+        <strong class="me-4">3-4pm</strong>
+        <div>
+          <strong>Design Stand Up</strong>
+          <div class="text-caption mb-2">
+            Hangouts
+          </div>
+        </div>
+      </div>
+    </v-timeline-item>
+
+    <v-timeline-item
+      dot-color="blue"
+      size="x-small"
+    >
+      <div class="d-flex">
+        <strong class="me-4">12pm</strong>
+        <div>
+          <strong>Lunch break</strong>
+        </div>
+      </div>
+    </v-timeline-item>
+
+    <v-timeline-item
+      dot-color="teal-lighten-3"
+      size="x-smallsmall"
+    >
+      <div class="d-flex">
+        <strong class="me-4">9-11am</strong>
+        <div>
+          <strong>Finish Home Screen</strong>
+          <div class="text-caption">
+            Web App
+          </div>
+        </div>
+      </div>
+    </v-timeline-item>
+    -->
+  </v-timeline>
+<!--
+                        
+-->                        
+                </v-expansion-panel-text>
+                  <v-card-text v-if="events.data.appts.length == 0" >
+                    No appointments scheduled.
+                  </v-card-text>
+              </v-expansion-panel>

@@ -1,0 +1,65 @@
+ 
+/* ===== BEGIN: Main App Loading Spinner  =========================== */
+  .appload {
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    display: block;
+    position: absolute;
+    left: 40%;
+    margin-top: 50px;
+  }
+
+  .loader {
+    border: 16px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 16px solid #3498db;
+    width: 120px;
+    height: 120px;
+    -webkit-animation: spin 2s linear infinite; /* Safari */
+    animation: spin 1s linear infinite;
+  }
+
+  /* Safari */
+  @-webkit-keyframes spin {
+    0% { -webkit-transform: rotate(0deg); }
+    100% { -webkit-transform: rotate(360deg); }
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+/* ===== END: Main App Loading Spinner ============================= */
+
+/* ===== BEGIN: Card Add Blink Animation =========================== */
+  @keyframes blink {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+
+  .blink {
+    animation: blink 0.75s linear 2; /* Blink 3 times */
+  }
+/* ===== BEGIN: Card Add Blink Animation ============================ */
+
+  /* Circle for the avatar next to user name */
+  .avatar {
+    color: #fff; 
+    background-color: #d64161;
+    padding: 4px 3px 0px 0px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius:100%;
+    width:40px;
+    height: 40px;
+    font-weight: 700;
+    font-size: 1.5em;
+    font-family: 'Tangerine', cursive;
+    margin: 1px 5px 1px 1px;
+    text-transform: uppercase;
+  }

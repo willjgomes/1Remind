@@ -1,0 +1,56 @@
+// Component:    Progress Segemented Widget
+// Description:  Variation of Vue's progress linear, except this is segemented
+// Model:        
+
+const wprogresssegment = {
+  props: {
+    total: {
+      type: Number,
+      required: true,
+    },
+    completed: {
+      type: Number,     
+      default: () => {return 0},
+      required: false,
+    },    
+    inprogress: {
+      type: Number,
+      default: 0,
+      required: false,
+    }    
+  },
+
+  setup(props) {
+      // Computed property to generate segments based on widget properties
+      const segments = computed(() => {
+        return Array.from({ length: props.total }, (_, index) => {
+          if (props.completed > index) {
+            return 'completed';  // Completed segment
+          } else if ((props.completed + props.inprogress - 1) >= index) {
+            return 'in-progress';  // Current progress segment
+          } else {
+            return 'not-started';  // Not yet started segments
+          }
+        });
+      });
+
+      return {
+        segments,
+      };
+  },
+
+  template: /*html*/ `
+    <div class="progress-container mb-2">
+      <div
+        class="progress-segment"
+        v-for="(segment, index) in segments"
+        :key="index"
+        :class="{
+          'completed': segment === 'completed',
+          'in-progress': segment === 'in-progress',
+          'not-started': segment === 'not-started'
+        }"
+      ></div>
+    </div>
+  `
+}

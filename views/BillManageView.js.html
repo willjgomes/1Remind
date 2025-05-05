@@ -1,0 +1,174 @@
+
+const billmanageview = {
+  name: 'BillManageView',
+
+  components: {
+    cbillcards,
+  },
+
+  setup() {
+    //This creates the model to hold all the events for the agenda tab viewss
+    function createTabViewModel(){
+      return {
+        bills: {
+          currMth:   {id:'',events:[]},
+          nextMth:   {id:'',events:[]},
+        },
+        loaded:   false,
+      }
+    }
+
+    const tab = ref('current');
+    const tabName = {
+      current: '',
+      next: ''
+    }
+    const bills = reactive(createTabViewModel());
+    const panel = ref([0]);
+    const sortAsc = ref(true);
+
+    const alphaicon = ref('mdi-sort-alphabetical-ascending');
+    const dateicon = ref('mdi-sort-clock-ascending-outline');
+  
+    const cardOptions = reactive({
+      showDetails: true,
+      sortKey: 'date',
+      showPaid: true,
+    })
+
+    function sortItems() {
+      sortAsc.value = !sortAsc.value;
+      if (cardOptions.sortKey === 'date'){
+        dateicon.value = 'mdi-sort-clock-' + (sortAsc.value ? 'ascending':'descending') + '-outline';
+      } else if (cardOptions.sortKey === 'title'){
+        alphaicon.value = 'mdi-sort-alphabetical-' + (sortAsc.value ? 'ascending':'descending');
+      }
+      
+      bills.currMth.events.sort(compare);
+      bills.nextMth.events.sort(compare);
+    }
+
+    function compare(a, b) {
+      if (cardOptions.sortKey == 'title' && sortAsc.value){
+        if (b.summary > a.summary) return -1;
+        if (a.summary > b.summary) return 1;
+      } else if (cardOptions.sortKey == 'title' && !sortAsc.value){
+        if (a.summary > b.summary) return -1;
+        if (b.summary > a.summary) return 1;
+      } else if (cardOptions.sortKey == 'date'){
+        const date1 = (new Date(a.startTime)).getTime();
+        const date2 = (new Date(b.startTime)).getTime()
+        if (sortAsc.value){
+          if (date2 > date1) return -1;
+          if (date1 > date2) return 1;
+        } else {
+          if (date1 > date2) return -1;
+          if (date2 > date1) return 1;
+        }                       
+      }
+      return 0;
+    }
+
+    async function getEvents(month) {
+      console.log("Fetching all bills for: " + month);        
+      if (month == 'current'){
+        google.script.run.withSuccessHandler(
+          (data) => {bills.currMth=JSON.parse(data);bills.loaded = true;}).getBillMonthEventsModel(month);
+      } else if (month == 'next'){
+        google.script.run.withSuccessHandler(
+          (data) => {bills.nextMth=JSON.parse(data);bills.loaded = true;}).getBillMonthEventsModel(month);
+      }
+    }
+
+    function refresh(){
+      bills.loaded = false;
+      getEvents('current');
+      getEvents('next');
+    }
+
+    onBeforeMount(() => {
+        const date = new Date();
+        tabName.current = date.toLocaleString("default", { month: "long" });
+
+        //Set to date to first day of month. Needed when last day of this
+        //month greater than days in next month, in which event adding
+        //one to month may roll over to an additional month.
+        date.setDate(1);  
+        date.setMonth(date.getMonth() + 1)        ;
+        tabName.next = date.toLocaleString("default", { month: "long" });
+
+        console.log(tabName.current + ' ' + tabName.next);
+      }      
+    )
+
+    onMounted(() => {
+      getEvents('current');
+      getEvents('next');
+    })
+
+
+    return {
+      tab,
+      tabName,
+      bills,
+      panel,
+      sortItems,
+      cardOptions,
+      alphaicon,
+      dateicon,
+      refresh
+    }
+  },
+
+  template: `
+    <v-tabs
+      v-model="tab" 
+      align-tabs="title"
+      bg-color="deep-orange"
+      center-active
+      slider-size="10" 
+    >
+      <v-tab
+        key="current"
+        :text="tabName.current"
+        value="current"
+      ></v-tab>
+      <v-tab
+        key="next"
+        :text="tabName.next"
+        value="next"
+      ></v-tab>
+    </v-tabs>
+    
+    <v-btn-toggle
+      v-model="cardOptions.sortKey"
+      color="primary"
+      mandatory
+    >
+      <v-btn :icon="alphaicon" value="title" @click="sortItems()"></v-btn>
+      <v-btn :icon="dateicon" value="date" @click="sortItems()"></v-btn>
+    </v-btn-toggle>
+    <v-btn icon flat class="rounded-0" @click="cardOptions.showPaid = !cardOptions.showPaid">
+      <v-icon>{{cardOptions.showPaid ? 'mdi-eye-outline':'mdi-eye-off-outline'}}</v-icon>
+    </v-btn>
+
+    <v-tabs-window v-model="tab">
+      <v-tabs-window-item key="current" value="current">
+        <v-container v-if="!bills.loaded" class="pa-2">
+          <v-progress-circular indeterminate></v-progress-circular>          
+        </v-container>
+        <v-container v-else class="pa-2">
+          <cbillcards v-model="bills.currMth" :options="cardOptions"></cbillcards>
+        </v-container>
+      </v-tabs-window-item>
+      <v-tabs-window-item key="next" value="next">
+        <v-container class="pa-2">
+          <cbillcards v-model="bills.nextMth" :options="cardOptions"></cbillcards>
+        </v-container>
+      </v-tabs-window-item>
+    </v-tabs-window>  
+  `
+
+}
+
+

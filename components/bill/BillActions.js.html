@@ -1,0 +1,226 @@
+
+const cbilldeleteconfirm = {
+  props: {
+    modelValue: {
+      type: Object,
+      default: () => {return {id:'',events:[]}}
+    }
+  },
+
+  setup(props,{ emit }) {
+    const billEvent = computed({
+      get: () => props.modelValue,
+      set: (value) => emit('update:modelValue', value), 
+    });
+  
+    async function deleteBill(){
+      google.script.run.withSuccessHandler((data) => {console.log("Bill Deleted");}).
+        deleteBill(billEvent.value.calId, billEvent.value.input);
+      
+      //Last action refresh
+      lastActionModel.value = h_getPeriodForDate(new Date(billEvent.value.input.startTime));
+      lastAction.value = "billdeleted";
+
+      billEvent.value.deleteConfirmShown = false;
+    }
+
+    return {
+      billEvent,
+      deleteBill,
+    }
+  },
+
+  template: /*html*/ `
+    <v-dialog
+      v-model="billEvent.deleteConfirmShown"
+      width="auto"
+      class="mx-auto"
+      persistent
+    >
+      <v-card class="pa-4"
+      > 
+        <v-card-text>
+          Confirm delete of  {{billEvent.input.summary}} bill.
+        </v-card-text>
+        <v-card-text v-if="billEvent.input.recurring" color="yellow">
+          WARNING: This will delete all current and future bills. 
+        </v-card-text>
+
+        <v-card-actions>
+          <v-btn
+            text="Cancel"
+            variant="plain"
+            @click="billEvent.deleteConfirmShown = false;" 
+          ></v-btn>
+
+          <v-btn
+            text="Confirm"
+            variant="tonal"
+            @click="deleteBill()" 
+          ></v-btn>
+
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  `
+}
+
+const cbillpayedit = { 
+
+  props: {
+    modelValue: {
+      type: Object,
+      default: () => {return {id:'',events:[]}}
+    }
+  },
+
+  setup(props,{ emit }) {
+    const billEvent = computed({
+      get: () => props.modelValue,
+      set: (value) => emit('update:modelValue', value), 
+    });
+
+
+    //Custom Validators
+    const requiredIfAuto = (value) => ((helpers.req(value) && billEvent.value.input.details.payType == 'AUTO') || billEvent.value.input.details.payType != 'AUTO');
+    const requiredIfOnce = (value) => ((helpers.req(value) && billEvent.value.input.details.payType != 'AUTO') || billEvent.value.input.details.payType == 'AUTO');
+
+    const rules = {
+      paidDate: { required: helpers.withMessage("Date is required", requiredIfOnce) },
+      autoDay:  { required: helpers.withMessage("Day is required", requiredIfAuto) }
+    }
+
+    //TODO: I could not get the vulidate to work properly with the billEvent.input model, idk if its due to nesting
+    // This also does not work if its not reactive
+    const v$Model = reactive({
+      paidDate: '',
+      autoDay: ''
+    })
+
+    const vPayEdit$ = useVuelidate(rules,v$Model)
+
+    function cancelPayEdit(){
+      billEvent.value.input.details.payType   = billEvent.value.original.payType;
+      billEvent.value.input.details.paidDate  = billEvent.value.original.paidDate;
+      billEvent.value.input.details.payStatus = billEvent.value.original.payStatus;
+      billEvent.value.input.details.autoDay   = billEvent.value.original.autoDay;
+      billEvent.value.payEditShown = false;
+    }
+
+    async function updatePayDetails(){
+      const changesMade = 
+          billEvent.value.input.details.payType   != billEvent.value.original.payType ||
+          billEvent.value.input.details.paidDate  != billEvent.value.original.paidDate ||
+          billEvent.value.input.details.payStatus != billEvent.value.original.payStatus ||
+          billEvent.value.input.details.autoDay   != billEvent.value.original.autoDay;
+
+      if (changesMade){
+
+        if (billEvent.value.input.details.payType == 'MANUAL'){
+          billEvent.value.input.details.payStatus = 'PAID';
+          billEvent.value.input.details.autoDay   = '';
+        } else if (billEvent.value.input.details.payType == 'AUTO'){
+          billEvent.value.input.details.payStatus = '';
+          billEvent.value.input.details.paidDate  = '';
+        } else if (billEvent.value.input.details.payType == 'SCHEDULED'){
+          billEvent.value.input.details.payStatus = '';
+          billEvent.value.input.details.autoDay = '';
+        } else if (billEvent.value.input.details.payType == 'SKIP'){
+          billEvent.value.input.details.payStatus = 'SKIPPED';
+          billEvent.value.input.details.autoDay = '';
+          billEvent.value.input.details.paidDate = '';
+        }
+
+        //Validate the dates
+        v$Model.paidDate = billEvent.value.input.details.paidDate;
+        v$Model.autoDay = billEvent.value.input.details.autoDay;
+        const isFormCorrect = await this.vPayEdit$.$validate();
+
+        //If date is correctly entered or no date is required (ie for skipped payments)
+        if (isFormCorrect || billEvent.value.input.details.payType == 'SKIP'){
+          google.script.run.withSuccessHandler((data) => {console.log("Successful GS.updateBillDetails");}).
+            updateBillDetails(billEvent.value.calId, billEvent.value.input);      
+        
+          billEvent.value.payEditShown = false;
+        }
+      }
+    }
+    
+    function deletePayDetails(){
+      billEvent.value.input.details.payStatus = '';
+      billEvent.value.input.details.paidDate = '';
+      billEvent.value.input.details.payType = '';
+      billEvent.value.input.details.autoDay = '';
+      google.script.run.withSuccessHandler((data) => {console.log("Successful GS.updateBillDetails");}).
+        updateBillDetails(billEvent.value.calId, billEvent.value.input);
+      billEvent.value.payEditShown = false;      
+    }
+
+    return {
+      cancelPayEdit,
+      updatePayDetails,
+      deletePayDetails,
+      billEvent,
+      vPayEdit$,
+      h_checkDigit,      
+    }
+  },
+
+  template: `
+    <v-dialog
+      v-model="billEvent.payEditShown"
+      width="auto"
+      class="mx-auto"
+      persistent
+    >
+      <v-card
+        prepend-icon="mdi-calendar-clock-outline"
+        title="Payment Details"
+        class="pa-4"
+      > 
+        {{billEvent.input.summary}}
+        <v-radio-group v-model="billEvent.input.details.payType">
+          <v-radio label="Manual" value="MANUAL"></v-radio>
+          <v-radio label="One-Time Scheduled" value="SCHEDULED"></v-radio>
+          <v-radio label="Automated Monthly" value="AUTO"></v-radio>
+          <v-radio label="No Payment Due" value="SKIP"></v-radio>
+        </v-radio-group>
+        <v-text-field v-model="billEvent.input.details.paidDate"
+          label="Date"
+          required
+          type="date"
+          :error-messages="vPayEdit$.paidDate.$errors.map(e => e.$message)"          
+          v-show="!(['AUTO','SKIP'].includes(billEvent.input.details.payType))" 
+          />
+        <v-text-field v-model="billEvent.input.details.autoDay"
+          label="Day of Month"
+          maxlength="2"
+          type="number"
+          :error-messages="vPayEdit$.autoDay.$errors.map(e => e.$message)"                    
+          v-show="(billEvent.input.details.payType == 'AUTO')"
+        />
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            text="Cancel"
+            variant="plain"
+            @click="cancelPayEdit()" 
+          ></v-btn>
+
+          <v-btn
+            text="Delete"
+            variant="plain"
+            @click="deletePayDetails()" 
+          ></v-btn>
+
+          <v-btn
+            color="primary"
+            text="Update"
+            variant="tonal"
+            @click="updatePayDetails()"           
+          ></v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+    `
+}

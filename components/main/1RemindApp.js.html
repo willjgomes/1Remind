@@ -1,0 +1,117 @@
+  const about = {
+      template: `<div><h1>About Page</h1><p>Will's 1 Reminder App!</p></div>`
+  };
+
+  const comingsoon = {
+      template: `
+        <v-container fill-height fluid>
+          <v-row align="center" justify="center">
+            <v-img
+              :aspect-ratio="1"
+              class="bg-white"
+              src="https://img.freepik.com/free-vector/realistic-coming-soon-background_23-2148881394.jpg"
+              width="400"
+              cover
+            >
+            </v-img>
+          </v-row>
+        </v-container>
+      `
+  };
+
+   // Define routes
+  const routes = [
+      { path: '/',            component: agendaview },
+      { path: '/managebill',  component: billmanageview },
+      { path: '/promotions',  component: promomanageview },
+      { path: '/about',       component: about },
+      { path: '/calendar',    component: ccalendar },
+      { path: '/comingsoon',  component: comingsoon },
+      { path: '/:pathMatch(.*)*', redirect: '/promotions' }     //If no path match default to agend view page
+  ];
+
+  // Create the router instance
+  const router = createRouter({
+      history: createWebHistory(),
+      routes,
+  });
+
+  const vuetify = createVuetify();
+  const appData = ref({userInfo:""});
+  const appDataLoaded = ref(false);
+
+  //TODO: Look into using component v-model two-way binding, instead of making these global
+  const createBillShown = ref(false);
+  const createPromoShown = ref(false);
+  const savingShown = ref(false);
+  const drawer = ref(false);
+
+  //TODO: Find a better way to call functions from parent from child componentt, or not use global flag
+  const lastAction = ref('');
+  const lastActionModel = ref('');
+
+  //Create the main App
+  const app = createApp({
+    components: {
+      cbillform,    // Maybe add this to a new bill action component which gets added to bottom nav
+      cpromoform,
+      wprogresssegment,
+    },
+
+    setup(){
+      const createSelectShown = ref(false);   //Dialog for selecting new event type to create                     
+      
+      const childRef = ref(null);
+
+      // Proxy function to call child's refresh method using a child component reference.
+      // This is used by the buttons on the bottom navigation bar.
+      const refreshView = () => {
+        console.log(childRef.value.$options.name);
+        try{
+          if (childRef.value) {
+            console.log("Trying to call");
+              childRef.value.refresh(); // Call method on child component
+          }
+        } catch (error) {
+            console.log("Refresh method not defined for current view.");
+            console.log(error);
+        }
+      }
+
+      async function getAppData() {
+        google.script.run.withSuccessHandler((data) => {
+          appData.value=data;
+          appDataLoaded.value = true;
+        }).getAppData();
+      }
+
+      onBeforeMount(() => {
+          getAppData(); 
+      })
+
+      return { 
+        drawer,
+        router, 
+        createSelectShown,
+        createBillShown,
+        createPromoShown,
+        savingShown,
+        refreshView,
+        childRef,
+        appData,
+      };
+    }
+  });
+
+  app.use(router)
+  app.use(vuetify)
+  app.mount('#app')
+
+  nextTick(() => {
+    const app = document.getElementById('app');
+    const appload = document.getElementById('appload');
+    app.style.display = 'block';
+    appload.style.display = 'none';
+  });
+
+
