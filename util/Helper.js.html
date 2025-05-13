@@ -129,10 +129,10 @@ function h_util_getMonthlyBillDate(day){
 }
 
 
-//This takes the model value from the last action (the recently saved event), 
+//This takes the model value from the last action (the recently saved event-item), 
 //and adds it to the events model. Resort the events model using the active
 //comprator for the view. Using reference to the v-card of the newly
-//added event it scrolls it into view and blinks.
+//added event-item it scrolls it into view and blinks.
 async function h_updateEventsModelAndBlinkCardOnSave(eventsModel, comparator, cardRefs){
 
     const event = lastActionModel.value;
@@ -168,18 +168,18 @@ function h_scrollToCard(cardRefs, event) {
   event.isBlinking = true;
 }
 
-// h_setRef: A function that takes in an event id and a DOM reference map to create an anonymous 
+// h_setRef: A function that takes in an event id and a DOM reference map (DOMRefs) to create an anonymous 
 // function to store the DOM element in the reference map using event id as lookup key
 //
-// Use with the Vue :ref directive (which allows progamattic access to the DOM element
+// Use with the Vue :ref directive (which allows progammatic access to the DOM element
 // such as the v-card). Typically one sets a custom function taking in a element argument
 // on the ref attribute, so additional element processing can be done. In this case the 
 // addtional processing is simply storing the element in our components dom reference map.
 //
-// This approach is needed to store our own refrences to the elements when using composition API.
-// The Options API there is a simpler way to store and acess the refs. The ref is being
-// so we can scroll to a newly added element (eg. event v-card) for visual feedback of a newly
-// saved element.
+// This approach is needed to store our own refrences to the elements when using Composition API.
+// (Note: With the Options API there is a simpler way to store and acess the refs). The ref is being 
+// used so we can scroll to a newly added element (eg. event v-card) for visual feedback after a
+// creating/saving a new event-item (eg. promo item).
 const h_setRef = (id,DOMRefs) => {
   return (el) => {
     if (el) {

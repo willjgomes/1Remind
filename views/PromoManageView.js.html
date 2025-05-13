@@ -42,7 +42,7 @@ const promomanageview = {
     })
 
     const promoEvent = reactive({
-      original: {},       // Copy of original promo event values saved here, to undo edit changes
+      original: {},       // Copy of original promo event values saved here, used to undo edit changes
       input: {},          // Promo event values to display on form, where direct changes are made 
       calId: '',
       index: null,                  //Index of the promotionEvent in the promo.events array (used for delete))
@@ -318,7 +318,7 @@ const promomanageview = {
     }
   },
 
-  template: `
+  template: /*html*/ `
     <v-tabs
       v-model="tab" 
       align-tabs="title"

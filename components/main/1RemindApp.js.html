@@ -2,6 +2,7 @@
       template: `<div><h1>About Page</h1><p>Will's 1 Reminder App!</p></div>`
   };
 
+  // Placeholder component definition for any coming soon pages
   const comingsoon = {
       template: `
         <v-container fill-height fluid>
@@ -19,7 +20,8 @@
       `
   };
 
-   // Define routes
+   // The main app uses a router-view component for navigation (see 1RemindApp.html)
+   // This is used to define the routes for the path and component of the view pages.
   const routes = [
       { path: '/',            component: agendaview },
       { path: '/managebill',  component: billmanageview },
@@ -27,7 +29,7 @@
       { path: '/about',       component: about },
       { path: '/calendar',    component: ccalendar },
       { path: '/comingsoon',  component: comingsoon },
-      { path: '/:pathMatch(.*)*', redirect: '/promotions' }     //If no path match default to agend view page
+      { path: '/:pathMatch(.*)*', redirect: '/promotions' }     //If no path match default to agenda view page
   ];
 
   // Create the router instance
@@ -36,7 +38,7 @@
       routes,
   });
 
-  const vuetify = createVuetify();
+  const vuetify = createVuetify();    //Intialize Vuetify so we can use the standard UI components framework
   const appData = ref({userInfo:""});
   const appDataLoaded = ref(false);
 
@@ -47,10 +49,11 @@
   const drawer = ref(false);
 
   //TODO: Find a better way to call functions from parent from child componentt, or not use global flag
+  //Global action flags and data
   const lastAction = ref('');
   const lastActionModel = ref('');
 
-  //Create the main App
+  //Create the main Vue App (this will be mounted in html "app" div using app.mount())
   const app = createApp({
     components: {
       cbillform,    // Maybe add this to a new bill action component which gets added to bottom nav
@@ -105,7 +108,7 @@
 
   app.use(router)
   app.use(vuetify)
-  app.mount('#app')
+  app.mount('#app')     // Mount the app into div with id='app' defined in 1RemindApp.html
 
   nextTick(() => {
     const app = document.getElementById('app');
