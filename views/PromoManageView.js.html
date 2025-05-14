@@ -3,11 +3,7 @@ const promomanageview = {
   name: 'PromoManageView',
 
   components: {
-    cpromoeditspend,
-    cpromodeleteconfirm,
-    c_promo_edit_txn,
-    c_promo_edit,
-    wprogresssegment,
+    cpromocards
   },
 
   setup() {
@@ -31,32 +27,11 @@ const promomanageview = {
     const alphaicon = ref('mdi-sort-alphabetical-ascending');
     const dateicon = ref('mdi-sort-clock-ascending-outline');
     const numicon = ref('mdi-sort-numeric-ascending');
-  
-    const isCardExpanded = reactive({});
 
     const cardOptions = reactive({
       showDetails: true,
-      sortKey: 'title',
-      showPaid: true,
+      sortKey: 'title'
     })
-
-    const promoEvent = reactive({
-      original: {},       // Copy of original promo event values saved here, used to undo edit changes
-      input: {},          // Promo event values to display on form, where direct changes are made 
-      calId: '',
-      index: null,                  //Index of the promotionEvent in the promo.events array (used for delete))
-      txn: null,                    //Active txn being edited
-      txnIdx: null,                 //Index of active txn being edited
-      
-      //Dialog activators
-      editSpendShown: false,        //Net spend edit dialog
-      deleteConfirmShown: false,    //Promotion delete dialog
-      editTxnShown: false,          //Edit/Add Transaction dialog
-      editShown: false,             //Edit Promotion dialog
-    });
-
-    //References to each event v-card element
-    const cardRefs = ref({});
 
     function sortItems() {
       sortAsc.value = !sortAsc.value;
@@ -98,13 +73,6 @@ const promomanageview = {
       return 0;
     }
 
-    watch(lastAction, async (currentValue, oldValue) => {
-      console.log('Last Action: [' + currentValue + '][' + lastActionModel.value +']')
-      if (['newpromoadded'].includes(currentValue)){        
-        h_updateEventsModelAndBlinkCardOnSave(promoData.promos.events, compare, cardRefs);
-      } 
-    })
-
     async function getEvents() {
       console.log("Fetching all active promotions");        
       google.script.run.withSuccessHandler(
@@ -116,158 +84,11 @@ const promomanageview = {
         ).getActivePromoEventsModel();
     }
 
-    function promoEditSpendClick(calId, event){
-      promoEvent.calId = calId;
-      
-      //Save original transaction details
-      promoEvent.original.txnDetails = {};
-      promoEvent.original.txnDetails.totalAmt = event.txnDetails.totalAmt;
-
-      //Assign the event to input model of form, which will be used to save the data
-      promoEvent.input = event;
-      
-      //Show confirm  dialog
-      promoEvent.editSpendShown = true;
-    }
-
-    function promoDeleteClick(calId, event, index){
-      promoEvent.calId = calId;
-
-      //Assign event to input model of form, full assign uncessary since promo will be deleted
-      promoEvent.input = event;
-      
-      //Show confirm  dialog
-      promoEvent.deleteConfirmShown = true;
-    }
-
-    function promoEditClick(calId, event, index){
-      promoEvent.calId = calId;
-
-      promoEvent.original = {};
-      h_copyObject(event, promoEvent.original, true);
-
-      //Assign event to input model of form, full assign uncessary since promo will be deleted
-      promoEvent.input = event;
-      
-      //Show confirm  dialog
-      promoEvent.editShown = true;
-    }
-
-    function promoEditTxnClick(calId, event, txnIdx){
-      promoEvent.calId = calId;
-      console.log("txnIdx: [" + txnIdx + "]");
-
-      //TODO: Save the original txn values to the original
-      promoEvent.original = {};
-      h_copyObject(event.txnDetails.txnList[txnIdx], promoEvent.original, true);
-
-      //Assign event to input model of form, note the full promo event is needed since on any edit
-      //the full JSON object must be saved
-      promoEvent.input = event;
-      promoEvent.txn = event.txnDetails.txnList[txnIdx]
-      promoEvent.txnIdx = txnIdx;
-      
-      //Show confirm  dialog
-      promoEvent.editTxnShown = true;
-    }
-
-    function promoAddTxnClick(calId, event){
-      promoEvent.calId = calId;
-
-      promoEvent.original = {};
-
-      //Assign event to input model of form, note the full promo event is needed since on any edit
-      //the full JSON object must be saved
-      promoEvent.input = event;
-      promoEvent.txn = {
-        name:"",
-        completed: false,
-        amt:"",
-        note:"",      
-        date:"",      
-        type: "",
-        EID: "",      
-        required: false, 
-      }
-      promoEvent.txnIdx = -1;
-      
-      //Show confirm  dialog
-      promoEvent.editTxnShown = true;
-    }
 
 
     function refresh(){
       promoData.loaded = false;
       getEvents();
-    }
-
-    function getPromoSubtitle(event){      
-      switch (event.offerType.toUpperCase()){
-        case 'OPENING'  : return 'New Account Bonus';
-        case 'SPEND'    : return 'Spending Bonus';
-        default         : return '';
-      }      
-    }
-
-    function getAmountLeftText(event){
-      let amtLeft;
-      
-      if (event.thresholdType === 'MULTIPLE') {
-        let currAmt = 0;
-
-        amtLeft = +event.numReqAllowTxns - getTxnComplete(event);
-      } else {
-        amtLeft = (+event.thresholdAmt) - (+event.txnDetails.totalAmt);
-      }
-      amtLeft = (0 > amtLeft ? 0 : amtLeft);
-
-      return amtLeft;
-    }
-
-    function getTimeLeftText(event){
-      let today = new Date();
-      let endDate = new Date(event.endDate);
-
-      const diffTime = Math.abs(endDate - today);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-           
-      let months = Math.round(diffDays / 30 * 10) / 10;
-      console.log(today + " " + event.endDate + " " + endDate + " " + diffTime + " " + diffDays);
-
-      if (30 > diffDays){
-        return diffDays + " days left";
-      } else  {
-        return months + " months left";
-      }
-    }
-
-    function getPercentComplete(event){
-      let percent = Math.floor((parseInt(event.txnDetails.totalAmt) / parseInt(event.thresholdAmt)) * 100);
-      percent = (percent > 100 ? 100:percent);
-
-      return percent;
-    }
-
-    function getTxnComplete(event){
-      let completed = 0;
-      for (const txn of event.txnDetails.txnList){
-        if (txn.required && txn.completed){
-          completed++
-        }
-      }
-      return completed;
-    }
-
-    function getPromoIcon(event){
-      switch (event.promoCategory.toUpperCase()){
-        case 'CREDIT' : return 'mdi-credit-card';
-        case 'BANK'   : return 'mdi-bank';
-        default       : return '';
-      }
-    }
-
-    function toggleDetails(index){
-      isCardExpanded[index] = !isCardExpanded[index];       
     }
 
     //TODO: Find Better Way to handle this
@@ -282,7 +103,6 @@ const promomanageview = {
 
     onMounted(() => {
       getEvents();
-      console.log(cardRefs.value);
     })
 
     return {
@@ -295,25 +115,7 @@ const promomanageview = {
       alphaicon,
       dateicon,
       numicon,
-      refresh,
-      h_showDateHeader,
-      h_getDateLabel,
-      h_setRef,
-      getPromoSubtitle,
-      getAmountLeftText,
-      getTimeLeftText,
-      getPercentComplete,
-      getTxnComplete,
-      getPromoIcon,
-      cardRefs,
-      promoEditSpendClick,
-      promoDeleteClick,
-      promoEditTxnClick,
-      promoEditClick,
-      promoAddTxnClick,
-      promoEvent,
-      toggleDetails,
-      isCardExpanded,
+      refresh
     }
   },
 
@@ -348,147 +150,11 @@ const promomanageview = {
           <v-progress-circular indeterminate></v-progress-circular>          
         </v-container>
         <v-container v-else class="pa-2">
-          <template v-for="(event,index) in promoData.promos.events">
-            <v-card color="cyan-accent-4" 
-                class="mt-2 mb-2 " 
-                :class="{ blink: event.isBlinking }"
-                :ref="h_setRef(event.id, cardRefs)"
-                >
-              
-              <!-- Card Title Vertical Dot Menu -->
-              <v-card-title class="text-body-1 pa-2 pb-0 mr-2">
-                <v-row>
-                  <v-col cols="11">
-                    <span class="text-h6 font-weight-bold">{{'$'+event.offerValue}}</span>
-                    {{ event.summary }}
-                  </v-col>
-                  <v-col cols="1">                
-                    <v-menu class="ma-0 pa-0">
-                      <template v-slot:activator="{ props }">
-                        <v-btn icon="mdi-dots-vertical" density="compact" variant="text" v-bind="props"></v-btn>
-                      </template>
-
-                      <v-list>
-                        <v-list-item >
-                          <v-icon @click="promoEditClick(promoData.promos.id, event, index)" >mdi-pencil-outline</v-icon>
-                        </v-list-item>
-                        <v-list-item >
-                          <v-icon @click="promoDeleteClick(promoData.promos.id, event, index)">mdi-trash-can-outline</v-icon>
-                        </v-list-item>
-                      </v-list>
-                    </v-menu>
-                  </v-col>
-                </v-row>
-              </v-card-title>
-
-              <!-- Card Title Vertical Dot Menu -->
-              <v-card-subtitle class="pb-2">
-                <v-icon :icon="getPromoIcon(event)" size="small"></v-icon>
-                {{getPromoSubtitle(event)}}
-              </v-card-subtitle>    
-
-              <!-- Card Content if Net Spend Based-->
-              <v-card-text v-if="event.thresholdType.toUpperCase()!='MULTIPLE'" class="bg-surface-light pt-4">
-                <v-row align="center" no-gutters>
-                  <v-col
-                     cols="6"
-                  >
-                    <span class="text-h6 font-weight-bold">{{getPercentComplete(event)}}%</span>
-                    <span class="text-caption font-italic"> of {{'$'+event.thresholdAmt}}</span>
-                  </v-col>
-                  <v-col class="text-right" cols="6">
-                      <v-btn class="mb-2" variant="outlined" size="x-small" @click="promoEditSpendClick(promoData.promos.id, event)">Edit Spend</v-btn>
-                  </v-col>
-                </v-row>                                
-                <v-progress-linear
-                  bg-color="surface-variant"
-                  class="mb-2"
-                  color="primary"
-                  height="10"
-                  :model-value="getPercentComplete(event)"
-                  rounded="pill"
-                ></v-progress-linear>
-                <span>{{'$'+getAmountLeftText(event)}} to go with {{getTimeLeftText(event)}}</span>
-              </v-card-text>
-              
-              <!-- Card Content if Transaction Based -->
-              <v-card-text v-if="event.thresholdType.toUpperCase()==='MULTIPLE'" class="bg-surface-light pt-4">
-                <v-row align="center" no-gutters>
-                  <v-col
-                     cols="6"
-                  >
-                    <span class="text-h6 font-weight-bold">{{getTxnComplete(event)}}</span>
-                    <span class="text-caption font-italic"> of {{event.numReqAllowTxns}}</span>
-                  </v-col>
-                  <v-col class="text-right" cols="6">
-                      <v-btn 
-                        class="mb-2" 
-                        variant="outlined" 
-                        size="x-small" 
-                        @click="toggleDetails(index)" 
-                        :append-icon="isCardExpanded[index] ? 'mdi-chevron-up' : 'mdi-chevron-down'">
-                        Details
-                      </v-btn>
-                  </v-col>
-                </v-row>                                
-                <wprogresssegment :total="parseInt(event.numReqAllowTxns)" :completed="getTxnComplete(event)"></wprogresssegment>
-                <span>{{getAmountLeftText(event)}} to go with {{getTimeLeftText(event)}}</span>    
-
-                <!-- Transaction Activity List -->
-                <v-expand-transition>
-                  <div v-if="isCardExpanded[index]" class="mt-2">                    
-                    <v-list>
-                      <v-list-item class="pl-2 pr-1 pt-0 pb-0">
-                        Deposit Details
-                        <template v-slot:append>
-                            <v-btn
-                              color="grey-lighten-1"
-                              icon="mdi-plus-box-outline"
-                              variant="text"
-                              @click="promoAddTxnClick(promoData.promos.id, event)"
-                            ></v-btn>
-                        </template>
-                      </v-list-item>
-                      <v-divider></v-divider>
-                      <template v-for="(txn,txnIdx) in event.txnDetails.txnList"         
-                        :key="txn.name">
-                        <v-list-item        
-                          :title="txn.name"
-                          class="ma-2 pa-0 "
-                        >
-                          <v-list-item-subtitle>Amt: $ {{txn.amt}} Date: {{txn.date}}</v-list-item-subtitle>
-                          <template v-slot:prepend>          
-                              <v-icon v-if="txn.completed"
-                                size="large" color="green-darken-1">mdi-checkbox-marked</v-icon>
-                              <v-icon v-else
-                                size="large" color="grey-lighten-1">mdi-checkbox-blank-outline</v-icon>
-                          </template>
-
-                          <template v-slot:append>
-                            <v-btn
-                              color="grey-lighten-1"
-                              icon="mdi-pencil"
-                              variant="text"
-                              @click="promoEditTxnClick(promoData.promos.id, event, txnIdx)"
-                            ></v-btn>
-                          </template>
-                        </v-list-item>
-                      </template>
-                    </v-list>
-                  </div>
-                </v-expand-transition>
-              </v-card-text>
-            </v-card>
-          </template>
+          <cpromocards v-model="promoData.promos" :options="cardOptions"></cpromocards>
         </v-container>
       </v-tabs-window-item>
     </v-tabs-window> 
 
-    <!-- Promo Action Dialogs -->
-    <cpromodeleteconfirm v-model="promoEvent"></cpromodeleteconfirm>
-    <cpromoeditspend v-model="promoEvent"></cpromoeditspend>
-    <c_promo_edit_txn v-model="promoEvent"></c_promo_edit_txn>
-    <c_promo_edit v-model="promoEvent"></c_promo_edit>
    `
 }
 
