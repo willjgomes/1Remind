@@ -4,7 +4,7 @@ const agendaview = {
   components: {
     cbillexppanel,
     capptcards,
-    cpromocards,
+    cpromoexppanel,
   },
 
   setup() {
@@ -148,28 +148,28 @@ const agendaview = {
         <v-expansion-panels  multiple v-model="panels.today">
           <capptcards v-model="eToday.data.appts" title="Appointments" :loading="!eToday.loaded" :datechip="eToday.dateLabel"></capptcards>
           <cbillexppanel v-model="eToday.data.bills" title="Bills" :loading="!eToday.loaded" :datechip="eToday.dateLabel"></cbillexppanel>
-          <cpromocards v-model="eToday.data.promos" title="Promotions" :loading="!eToday.loaded" :datechip="eToday.dateLabel"></cpromocards>
+          <cpromoexppanel v-model="eToday.data.promos" title="Promotions" :loading="!eToday.loaded" :datechip="eToday.dateLabel"></cpromoexppanel>
         </v-expansion-panels>
       </v-tabs-window-item>
       <v-tabs-window-item key="tomorrow" value="tomorrow">
         <v-expansion-panels  multiple v-model="panels.tomorrow">
           <capptcards v-model="eTomorrow.data.appts" title="Appointments" :loading="!eTomorrow.loaded" :datechip="eTomorrow.dateLabel"></capptcards>
           <cbillexppanel v-model="eTomorrow.data.bills" title="Bills" :loading="!eTomorrow.loaded" :datechip="eTomorrow.dateLabel"></cbillexppanel>
-          <cpromocards v-model="eTomorrow.data.promos" title="Promos" :loading="!eTomorrow.loaded" :datechip="eTomorrow.dateLabel"></cpromocards>
+          <cpromoexppanel v-model="eTomorrow.data.promos" title="Promos" :loading="!eTomorrow.loaded" :datechip="eTomorrow.dateLabel"></cpromoexppanel>
         </v-expansion-panels>                  
       </v-tabs-window-item>
       <v-tabs-window-item key="thisweek" value="thisweek">
         <v-expansion-panels  multiple v-model="panels.thisweek">
           <capptcards v-model="eThisWeek.data.appts" title="Appointments" :loading="!eThisWeek.loaded" ></capptcards>
           <cbillexppanel v-model="eThisWeek.data.bills" title="Bills" :loading="!eThisWeek.loaded"></cbillexppanel>
-          <cpromocards v-model="eThisWeek.data.promos" title="Promos":loading="!eThisWeek.loaded"></cpromocards>
+          <cpromoexppanel v-model="eThisWeek.data.promos" title="Promos":loading="!eThisWeek.loaded"></cpromoexppanel>
         </v-expansion-panels>                  
       </v-tabs-window-item>
       <v-tabs-window-item key="nextweek" value="nextweek">
         <v-expansion-panels  multiple v-model="panels.nextweek">
           <capptcards v-model="eNextWeek.data.appts" title="Appointments" :loading="!eNextWeek.loaded"></capptcards>
           <cbillexppanel v-model="eNextWeek.data.bills" title="Bills" :loading="!eNextWeek.loaded"></cbillexppanel>
-          <cpromocards v-model="eNextWeek.data.promos" title="Promos" :loading="!eNextWeek.loaded"></cpromocards>            
+          <cpromoexppanel v-model="eNextWeek.data.promos" title="Promos" :loading="!eNextWeek.loaded"></cpromoexppanel>            
         </v-expansion-panels>                  
       </v-tabs-window-item>
     </v-tabs-window>
