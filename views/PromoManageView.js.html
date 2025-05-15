@@ -9,8 +9,11 @@ const promomanageview = {
   setup() {
     function createTabViewModel(){
       return {
-        promos: {id:'',events:[]},
-        loaded: false,
+        promos:  {
+          active: {id:'',events:[]},
+          prior:  {id:'',events:[]}
+        },
+        loaded: false
       }
     }
 
@@ -20,7 +23,7 @@ const promomanageview = {
       next: ''
     }
 
-    const promoData = reactive(createTabViewModel());
+    const promos = reactive(createTabViewModel());
     const panel = ref([0]);
     const sortAsc = ref(true);
 
@@ -43,7 +46,7 @@ const promomanageview = {
         numicon.value = 'mdi-sort-alphabetical-' + (sortAsc.value ? 'ascending':'descending');
       }
 
-      promoData.promos.events.sort(compare);
+      promos.promos.events.sort(compare);
     }
 
     function compare(a, b) {
@@ -74,28 +77,34 @@ const promomanageview = {
     }
 
     async function getEvents() {
-      console.log("Fetching all active promotions");        
+      console.log("Fetching all active and inactive promotions");        
       google.script.run.withSuccessHandler(
           (data) => {
-            promoData.promos=data;
-            promoData.promos.events.sort(compare);
-            promoData.loaded = true;
+            promos.active=data;
+            promos.active.events.sort(compare);
+            promos.loaded = true;
             }
         ).getActivePromoEventsModel();
+      google.script.run.withSuccessHandler(
+        (data) => {
+          promos.prior=data;
+          promos.prior.events.sort(compare);
+          promos.loaded = true;
+          }
+      ).getPriorPromoEventsModel();
     }
 
-
-
     function refresh(){
-      promoData.loaded = false;
+      promos.loaded = false;
       getEvents();
     }
 
     //TODO: Find Better Way to handle this
+    //FIXME: Now that the prior promos tab added, this needs to delete from the proper list
     watch(lastAction, (currentValue, oldValue) => {
       console.log('Last Action: [' + currentValue + '][' + lastActionModel.value +']')
       if (['promodeleted'].includes(currentValue)){
-        promoData.promos.events.splice(lastActionModel.value,1);
+        promos.promos.events.splice(lastActionModel.value,1);
         lastAction.value = '';
         lastActionModel.value = '';        
       } 
@@ -108,13 +117,13 @@ const promomanageview = {
     return {
       tab,
       tabName,
-      promoData,
+      promos,
       panel,
-      sortItems,
       cardOptions,
       alphaicon,
       dateicon,
       numicon,
+      sortItems,      
       refresh
     }
   },
@@ -130,7 +139,12 @@ const promomanageview = {
       <v-tab
         key="active"
         text="Active"
-        value="current"
+        value="active"
+      ></v-tab>
+      <v-tab
+        key="prior"
+        text="Prior"
+        value="prior"
       ></v-tab>
     </v-tabs>
     
@@ -145,16 +159,20 @@ const promomanageview = {
     </v-btn-toggle>
 
     <v-tabs-window v-model="tab">
-      <v-tabs-window-item key="current" value="current">
-        <v-container v-if="!promoData.loaded" class="pa-2">
+      <v-tabs-window-item key="active" value="active">
+        <v-container v-if="!promos.loaded" class="pa-2">
           <v-progress-circular indeterminate></v-progress-circular>          
         </v-container>
         <v-container v-else class="pa-2">
-          <cpromocards v-model="promoData.promos" :options="cardOptions"></cpromocards>
+          <cpromocards v-model="promos.active" :options="cardOptions"></cpromocards>
+        </v-container>
+      </v-tabs-window-item>
+      <v-tabs-window-item key="prior" value="prior">
+        <v-container class="pa-2">
+          <cpromocards v-model="promos.prior" :options="cardOptions"></cpromocards>
         </v-container>
       </v-tabs-window-item>
     </v-tabs-window> 
-
    `
 }
 

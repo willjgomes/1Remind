@@ -1,4 +1,7 @@
-//Creates a new promotion event
+// =================================================================================================================
+/**
+* Creates a new promotion event
+*/
 function createPromo(promoCalId, promoData){
   console.log(promoData);
 
@@ -61,7 +64,11 @@ function createPromo(promoCalId, promoData){
   return promoEventModel;
 }
 
-// JSON Object structure for the Promotion
+// =================================================================================================================
+
+/**
+ *  JSON Object structure for the Promotion
+ */
 function getCCNewDetailObject(){
   return {
     companyName: "",
@@ -94,19 +101,25 @@ function getCCNewDetailObject(){
   }
 }
 
-//A transaction activity record for the transaction list
+// =================================================================================================================
+
+/**
+ * A transaction activity record for the transaction list
+ */
 function getTxnActivityObject(pName, pAmt){
   return {
       name:pName,
       completed: false,
       amt:pAmt,
       note:"",      
-      date:"",      // For some reason using a null value as default, did not work when doing JSON parse, even though it should have
+      date:"",      // For some reason using a null value as default, didn't work when doing JSON parse, even though it should have
       type: "",
       EID: "",      //Notification EventID
       required: "", //True if required part of minNumTxns, false if additional added manually     
   }
 }
+
+// =================================================================================================================
 
 function getActivePromoEventsModel(){
   const eventlist = [];   
@@ -135,7 +148,55 @@ function getActivePromoEventsModel(){
   return data;
 }
 
-//Creates a Promo Event Vue Model from Google Calendar Event
+// =================================================================================================================
+
+// TODO: Merge this with the get active  function, to reduce code duplication
+/**
+ * This gets all the promo events in the past year that has an end date before tody.
+ * 
+ * @returns 
+ */
+function getPriorPromoEventsModel(){
+  const eventlist = [];   
+  const data = new Object();
+
+  //Calcualate date range for past year
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Start of today
+  const pastYear = new Date();
+  pastYear.setFullYear(today.getFullYear() - 1);
+
+  const allUserCals = CalendarApp.getAllOwnedCalendars();
+  for (const cal of allUserCals){
+    console.log('[' + cal.getName() + ']');    
+
+    if (cal.getName() == 'Promo Tracker'){
+      const calEvents = cal.getEvents(pastYear, today);
+
+      for (const event of calEvents){
+        const endTime = event.getEndTime();
+        if (endTime < today) { 
+          const promoEventModel = convertCalendarEventToPromoModelEvent(event);
+
+          eventlist.push(promoEventModel);
+          console.log("getInActivePromoEventsModel()");
+          console.log(promoEventModel) ;
+        }
+      }
+
+      data.events = eventlist;
+      data.id = cal.getId();
+    }    
+  }
+
+  return data;
+}
+
+// =================================================================================================================
+
+/**
+ * Creates a Promo Event Vue Model from Google Calendar Event
+ */
 function convertCalendarEventToPromoModelEvent(event){
     const description = event.getDescription();
     if (description.length > 0 && description.indexOf('{') >= 0){
@@ -160,6 +221,14 @@ function convertCalendarEventToPromoModelEvent(event){
     return details;
 }
 
+// =================================================================================================================
+
+/**
+ * Update an existing promtion event
+ * 
+ * @param {*} promoCalId 
+ * @param {*} promoEvent 
+ */
 function updatePromo(promoCalId, promoEvent){
   //TODO: Not sure if it is better to just get original information from the calendar event, 
   //instead of passing in via the promoEvent object.
@@ -174,6 +243,13 @@ function updatePromo(promoCalId, promoEvent){
   console.log("Updated Promo: " + JSON.stringify(updatedPromo));
 }
 
+// =================================================================================================================
+
+/**
+ * 
+ * @param {*} promoCalId 
+ * @param {*} promoEvent 
+ */
 function updatePromoDetails(promoCalId, promoEvent){
   console.log(`Promo Calendar ID: ${promoCalId}`);
   console.log(JSON.stringify(promoEvent));
@@ -189,11 +265,17 @@ function updatePromoDetails(promoCalId, promoEvent){
   const cal = CalendarApp.getCalendarById(promoCalId);
   const event = cal.getEventById(promoEvent.id);
   console.log(event.getTitle());
-  event.setDescription(JSON.stringify(details));
-   
+  event.setDescription(JSON.stringify(details));  
 }
 
+// =================================================================================================================
 
+/**
+ * Delete an exsiting promtion event
+ * 
+ * @param {*} promoCalId 
+ * @param {*} promoEvent 
+ */
 function deletePromotion(promoCalId, promoEvent){
   console.log(`Promo Calendar ID: ${promoCalId}`);
   console.log(JSON.stringify(promoEvent));
