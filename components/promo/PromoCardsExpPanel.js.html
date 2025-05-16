@@ -25,8 +25,8 @@
 
     return {
       promoEvents,
-      h_showDateHeader,
-      h_getDateLabel,
+      card_shouldShowDateHeader,
+      date_getDateLabel,
     };
   },
 
@@ -43,9 +43,9 @@
       </v-expansion-panel-title>
       <v-expansion-panel-text>
         <template v-for="(event,index) in promoEvents.events">
-          <span v-if="h_showDateHeader(event, index, promoEvents.events) && !datechip" color="primary">  
+          <span v-if="card_shouldShowDateHeader(event, index, promoEvents.events) && !datechip" color="primary">  
             <v-chip color="primary">
-              {{ h_getDateLabel(new Date(event.date)) }}
+              {{ date_getDateLabel(new Date(event.date)) }}
             </v-chip>
           </span>
           <v-card color="cyan-accent-4" 

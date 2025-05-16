@@ -1,0 +1,115 @@
+/**
+ * This gets the actual date for a recurring scheduled monthly payment from the
+ * auto pay day of month.
+ * 
+ * @param billDueDate The bills due date to determine the month for the auto pay date
+ * @param billAutoDay An integer representing the day of month for the auto pay day.
+ * @returns The cacluated date value for the auto paid date
+ */
+function date_getAutoPaidDate(billDueDate, billAutoDay){
+  //TODO: Need to test UTC craziness
+
+  const autoPaidDate = new Date();
+  const dueDate = new Date(billDueDate);
+
+  autoPaidDate.setDate(+billAutoDay);
+  if (autoPaidDate.getDate() > dueDate.getDate()){
+    autoPaidDate.setMonth(dueDate.getMonth()-1)
+  }
+
+  return autoPaidDate.toLocaleString('en-CA').substring(0,10);
+}
+
+/**
+ * @returns A string in form of "Sun 01/01"for the given date
+ */
+function date_getDateLabel(date){
+  const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  
+  let dString = date.toLocaleString();
+  dString = dString.substring(0,dString.lastIndexOf('/'));
+  dString = daysOfWeek[date.getDay()] + ' ' + dString;        
+
+  return dString;
+}
+
+/**
+ * @returns A string for period of the date (eg. Today, Tomorrow, This Week, Next Week)
+ */
+function date_getPeriod(date) {
+  //Create date without time component
+  const resetTime = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const today = resetTime(new Date());
+  
+  let period = '';
+  
+  //Get tomorrow's date
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+
+  if (today.getTime() === date.getTime()) {
+    period = 'today';
+  } else if (tomorrow.getTime() === date.getTime()) {
+    period = 'tomorrow';
+  } else {
+    // Get the start of the current week (Sunday)
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay());
+
+    // Get the end of the current week (Saturday)
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    // Get the start of next week (Sunday)
+    const startOfNextWeek = new Date(endOfWeek);
+    startOfNextWeek.setDate(endOfWeek.getDate() + 1);
+
+    // Get the end of next week (Saturday)
+    const endOfNextWeek = new Date(startOfNextWeek);
+    endOfNextWeek.setDate(startOfNextWeek.getDate() + 6);
+
+    // Check the date against the ranges
+    if (date >= startOfWeek && endOfWeek >= date) {
+      period = 'thisweek';
+    } else if (date >= startOfNextWeek && endOfNextWeek >= date) {
+      period = 'nextweek';
+    }
+  }
+
+  return period; 
+}
+
+/**
+ * This is the same function as the one in Utility.gs named h_util_parseDate()
+ * 
+ * @param dateString A string representation of date in form YYYY/MM/DD
+ * @returns A date object representing the date
+ */
+function date_parseString(dateString){
+    //TODO: Find better way to parse date, this feels hacky
+    const year = +dateString.substring(0, 4);
+    const month = +dateString.substring(5, 7);
+    const day = +dateString.substring(8, 10);
+    //throw Error(year + " " + month + " " + day + " " + eDate);
+
+    return new Date(year, month - 1, day);
+}
+
+/**
+ * THis is primarily used when saving a new bill based on a recurring day of month.
+ * 
+ * @returns Returns the full date given the day of month
+ */
+function date_getMonthlyBillDate(day){
+  var now = new Date();
+  var month = now.getMonth(); 
+  var year  = now.getFullYear()
+
+  if (now.getDate() > day){
+    // If current month is Dec (11), reset to Jan (0), otherwise set to next month (+1)
+    month = (month == 11 ? 0:month + 1);
+  }
+
+  //return day + " " + month + " " + year;
+  return new Date(year, month, day)
+}

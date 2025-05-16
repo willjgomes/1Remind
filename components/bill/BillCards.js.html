@@ -62,7 +62,7 @@
         } else if (['SCHEDULED', 'AUTO'].includes(event.details.payType)) {
           event.details.payStatus = 'VERIFIED';
           if (event.details.payType == 'AUTO'){
-            event.details.paidDate = h_getAutoPaidDate(event.startTime, event.details.autoDay);
+            event.details.paidDate = date_getAutoPaidDate(event.startTime, event.details.autoDay);
           } 
         }
       } else {
@@ -192,7 +192,7 @@
         }
       }
 
-      return h_showDateHeaderOffset(event, index, events, indexOffset);
+      return card_shouldShowDateHeaderOffset(event, index, events, indexOffset);
     }
 
     return {
@@ -202,8 +202,8 @@
       billPayEditClick,
       billDeleteClick,
       cardRefs,
-      h_showDateHeader,
-      h_getDateLabel,
+      card_shouldShowDateHeader,
+      date_getDateLabel,
       h_setRef,
       getDayCounterLabel,
       getDetailsText,
@@ -219,7 +219,7 @@
     <template v-for="(event,index) in billEvents.events">
       <span v-if="showBillDateHeader(event, index, billEvents.events) && !datechip" >  
         <v-chip v-if="options.sortKey=='date'" :class="getFontWeight(new Date(event.date))">
-          {{ h_getDateLabel(new Date(event.date)) }} {{getDayCounterLabel(new Date(event.date))}}
+          {{ date_getDateLabel(new Date(event.date)) }} {{getDayCounterLabel(new Date(event.date))}}
         </v-chip>
       </span>
       <v-card v-if="options.showPaid || !isBillPaid(event)"

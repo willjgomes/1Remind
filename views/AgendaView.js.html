@@ -13,11 +13,11 @@ const agendaview = {
     function createTabViewModel(period){
       let dLabel = '';
       if (period == 'today'){
-        dLabel = h_getDateLabel(new Date());
+        dLabel = date_getDateLabel(new Date());
       } else if (period == 'tomorrow'){
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
-        dLabel = h_getDateLabel(tomorrow);
+        dLabel = date_getDateLabel(tomorrow);
       }
 
       return {

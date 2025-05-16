@@ -1,0 +1,103 @@
+
+/**
+ * CardFunctions
+ * 
+ * This class contains all global helper functions that are used with Vuetify card 
+ * components for the display of event details.
+ */
+
+/* == CARD HEADERS ================================================================== */
+
+/**
+ * Use this to show horizantal rule date header between cards only when the date changes
+ * between one card to the next. This simply calls the shouldSHowDateHeaderOffset with 
+ * an offset value of 1 to indicate the card to check is the previous card.
+ * 
+ * @param event The event for the card displayed
+ * @param index The index of event in the events list
+ * @param events The full list of events for all cards displayed
+ * @returns True if the date for this cards event is different from last cards event 
+ */
+function card_shouldShowDateHeader(event, index, events){
+  return card_shouldShowDateHeaderOffset(event, index, events, 1);
+}
+
+/**
+ * Use this to show horizantal rule date header between cards only when the date changes
+ * between one displayed card to the next displayed card. This makes use of an offset
+ * value, since the previousevent card displayed may not be the previous event in the 
+ * events. This can be used when some of  the cards are being hiddent due to a filter 
+ * action to hide certain cards, such as bills already paid, etc.
+ * 
+ * @param indexOffset # to subtract from idx of current event card to get event of last
+ * displayed index.
+ * @returns True if the date for this cards event is different from last cards event 
+ */
+function card_shouldShowDateHeaderOffset(event, index, events, indexOffset){
+  if (index == 0) return true;
+
+  const dateStr1 = event.date.substring(0,10);     
+  const dateStr2 = events[index-indexOffset].date.substring(0,10);
+
+  //console.log(event.summary +': '+ dateStr1 +" "+ 
+  // events[index-indexOffset].summary +": "+ dateStr2);
+
+  return dateStr1 !== dateStr2;
+}
+
+/* === BLINK CARD =================================================================== */
+
+/** 
+ * This takes the recently saved event stored in the lastActionModel and adds it
+ * events list model. This automatically renders new v-card to display. It then resort 
+ * the events list using the provided comparator to ensure card shows up in correct
+ * place. Using card references of v-card of the newly added event it scrolls the
+ * card into view and blinks.
+ *
+ * @param events The events list model used to display the cards
+ * @param comparator The active comparator used to sort the cards
+ * @param cardRefs List of the card DOM references. See the h_setRef function for 
+ * explanation of how cardRefs were obtained.
+ */
+async function card_addLastSavedEventAndBlink(events, comparator, cardRefs){
+
+    const event = lastActionModel.value;
+    events.push(event);
+    events.sort(comparator);
+
+    // Ensure the DOM is updated after the mutation of eventsModel. This waits for
+    // newly saved event to be rendered as a v-card, otherwise it fails to find it.
+    await nextTick();
+
+    // Scroll to the card
+    card_scrollToView(event, cardRefs);
+
+    // Reset the last action model 
+    // FIXME: Is this the right place to do this?
+    lastAction.value = '';
+    lastActionModel.value = '';   
+}  
+
+/* === SCROLL TOARD ================================================================= */
+
+/**
+ * This will scroll into view to the card of the provided event
+ * 
+ * @param event The event of card to scroll into view
+ * @param cardRefs List of card DOM references
+ */
+function card_scrollToView(event, cardRefs) {
+  // Get the ref for the specific card. the .$el is needed to get the raw DOM element
+  // so we can call the scrollIntoView element. Vue elements don't provide this method.
+  const cardRef = cardRefs.value[`${event.id}`]?.$el; 
+  console.log("Card Scroll to View eventId: " + event.id);
+
+  // Scroll to the card
+  if (cardRef) {
+    cardRef.scrollIntoView({ behavior: 'auto', block: 'center' }); 
+  }
+
+  //Set the card models blinking to true 
+  //FIXME: Can we set irectly on the cardRef instead of using attr on event model
+  event.isBlinking = true;
+}

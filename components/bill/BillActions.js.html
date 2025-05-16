@@ -18,7 +18,7 @@ const cbilldeleteconfirm = {
         deleteBill(billEvent.value.calId, billEvent.value.input);
       
       //Last action refresh
-      lastActionModel.value = h_getPeriodForDate(new Date(billEvent.value.input.startTime));
+      lastActionModel.value = date_getPeriod(new Date(billEvent.value.input.startTime));
       lastAction.value = "billdeleted";
 
       billEvent.value.deleteConfirmShown = false;

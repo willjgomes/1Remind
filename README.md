@@ -10,6 +10,21 @@ In this codebase this term is primarily being used to to refer to Calendar Event
 Scinece definition of term 'event', which defines it as "is a detectable occurrence or change in the 
 system's state". Doing so will cause you to struggle to comprehend the code comments and/or behavior.
 
+### GAS Syntax Errors Iusses with JS.HTML files
+
+There are certain syntacitcally correct JS code that cause errors in when loading in HTML files, which
+are likely introduced based on how the GAS HTML include directive blocks work. No internet documentation 
+was found confirming all of these. 
+
+#### Less Than Operator
+It appears using a < operator in javascript HTML directive blocks attempting to interpret the '<' as the 
+beggining of a HTML element.  To avoid this all conditional logic only uses the '>' operator. As a result, 
+this may make some conditional statments less easy to read.
+
+#### Using // ===== Comments
+This appears to cause an 'Unexpected Token :' error in the Javascript console. Not sure why to avoid this
+use this format instead /* ==== */
+
 ### Frameworks Used
 
 #### Vuetify

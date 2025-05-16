@@ -48,9 +48,9 @@ const cbillform = {
 
         //Setup last action top take appropriate refresh (not sure if this is the best way)
         if (eventForm.dueDay != ''){
-          lastActionModel.value = h_getPeriodForDate(h_util_getMonthlyBillDate(eventForm.dueDay));
+          lastActionModel.value = date_getPeriod(date_getMonthlyBillDate(eventForm.dueDay));
         } else {
-          lastActionModel.value = h_getPeriodForDate(h_util_parseDate(eventForm.dueDate));
+          lastActionModel.value = date_getPeriod(date_parseString(eventForm.dueDate));
         }
         lastAction.value = 'newbillsaved'; // Must do this second or will trigger watch event
         

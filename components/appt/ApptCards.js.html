@@ -30,8 +30,8 @@
 
     return {
       apptEvents,
-      h_showDateHeader,
-      h_getDateLabel,
+      card_shouldShowDateHeader,
+      date_getDateLabel,
     };
   },
 
@@ -51,9 +51,9 @@
       </v-expansion-panel-text>
       <v-expansion-panel-text v-else>                 
         <template v-for="(event,index) in apptEvents.events">
-          <span v-if="h_showDateHeader(event, index, apptEvents.events) && !datechip" color="primary">  
+          <span v-if="card_shouldShowDateHeader(event, index, apptEvents.events) && !datechip" color="primary">  
             <v-chip color="primary">
-              {{ h_getDateLabel(new Date(event.date)) }}
+              {{ date_getDateLabel(new Date(event.date)) }}
             </v-chip>
           </span>
           <v-card color="blue-lighten-1" 

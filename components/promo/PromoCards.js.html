@@ -213,7 +213,7 @@ const cpromocards = {
     watch(lastAction, async (currentValue, oldValue) => {
       console.log('Last Action: [' + currentValue + '][' + lastActionModel.value +']')
       if (['newpromoadded'].includes(currentValue)){        
-        h_updateEventsModelAndBlinkCardOnSave(promoData.promos.events, compare, cardRefs);
+        card_addLastSavedEventAndBlink(promoData.promos.events, compare, cardRefs);
       } 
     })
 
@@ -223,8 +223,7 @@ const cpromocards = {
 
     return {
       promoEvents,
-      h_showDateHeader,
-      h_getDateLabel,
+      card_shouldShowDateHeader,
       h_setRef,
       getPromoSubtitle,
       getAmountLeftText,
