@@ -12,8 +12,8 @@
     
     <!-- Custom CSS for 1RemindApp -->
     <style>
-      <?!= include('css\\AppStyles.css'); ?>      
-      <?!= include('css\\WidgetStyles.css'); ?>
+      <?!= include('css/AppStyles.css'); ?>      
+      <?!= include('css/WidgetStyles.css'); ?>
     </style>
 
     <!-- Vue/Vuetify Javascript imports -->
@@ -28,34 +28,34 @@
       import { required, requiredIf, helpers } from 'vuelidate/validators'
       
       /* Custom Vue Component Widgets */
-      <?!= include('components/widgets\\WProgressSegment.js'); ?>
+      <?!= include('components/widgets/WProgressSegment.js'); ?>
 
       /* Custom App Component JS Includes (if not for GAS, would normally be imports)*/
-      <?!= include('components/appt\\ApptCards.js'); ?>
-      <?!= include('components/bill\\BillCreate.js'); ?>
-      <?!= include('components/bill\\BillActions.js'); ?>
-      <?!= include('components/bill\\BillCards.js'); ?>
-      <?!= include('components/bill\\BillCardsExpPanel.js'); ?>
-      <?!= include('components/promo\\PromoCreateForms.js'); ?>
-      <?!= include('components/promo\\PromoCreate.js'); ?>
-      <?!= include('components/promo\\PromoActions.js'); ?>
-      <?!= include('components/promo\\PromoCards.js'); ?>
-      <?!= include('components/promo\\PromoCardsExpPanel.js'); ?>
+      <?!= include('components/appt/ApptCards.js'); ?>
+      <?!= include('components/bill/BillCreate.js'); ?>
+      <?!= include('components/bill/BillActions.js'); ?>
+      <?!= include('components/bill/BillCards.js'); ?>
+      <?!= include('components/bill/BillCardsExpPanel.js'); ?>
+      <?!= include('components/promo/PromoCreateForms.js'); ?>
+      <?!= include('components/promo/PromoCreate.js'); ?>
+      <?!= include('components/promo/PromoActions.js'); ?>
+      <?!= include('components/promo/PromoCards.js'); ?>
+      <?!= include('components/promo/PromoCardsExpPanel.js'); ?>
 
       /* Utility and Helper Functions */
-      <?!= include('util\\Comparators.js'); ?>
-      <?!= include('util\\Helper.js'); ?>
-      <?!= include('util\\DateFunctions.js'); ?>
-      <?!= include('util\\CardFunctions.js'); ?>
+      <?!= include('util/Comparators.js'); ?>
+      <?!= include('util/Helper.js'); ?>
+      <?!= include('util/DateFunctions.js'); ?>
+      <?!= include('util/CardFunctions.js'); ?>
 
       /* Vue App Views */
-      <?!= include('views\\AgendaView.js'); ?>
-      <?!= include('views\\BillManageView.js'); ?>
-      <?!= include('views\\PromoManageView.js'); ?>
-      <?!= include('components/widgets\\Calendar.js'); ?>
+      <?!= include('views/AgendaView.js'); ?>
+      <?!= include('views/BillManageView.js'); ?>
+      <?!= include('views/PromoManageView.js'); ?>
+      <?!= include('components/widgets/Calendar.js'); ?>
 
       /* The Main JS to Bootstrapping the App */
-      <?!= include('components/main\\1RemindApp.js'); ?>
+      <?!= include('components/main/1RemindApp.js'); ?>
     </script>
   </head>
   <body>
@@ -66,7 +66,7 @@
     <div id="app" style="display:none">           
       <v-responsive class="border rounded">
         <v-app>
-          <?!= include('components/main\\AppBar.html'); ?> 
+          <?!= include('components/main/AppBar.html'); ?> 
           <v-main width="400" class="mx-auto">
             <!-- <router-view /> (using below so components are cached, and not recreated) -->
             <router-view v-slot="{ Component }" >
@@ -74,9 +74,9 @@
                 <component :is="Component" ref="childRef"/>
               </keep-alive>
             </router-view>            
-            <!-- <?!= include('test\\TestingSection.html'); ?> -->
+            <!-- <?!= include('test/TestingSection.html'); ?> -->
           </v-main>          
-          <?!= include('components/main\\BottomNav.html'); ?>
+          <?!= include('components/main/BottomNav.html'); ?>
             <!-- Custom Form Component for Creating Bills -->
             <cbillform></cbillform>
             <cpromoform></cpromoform>
