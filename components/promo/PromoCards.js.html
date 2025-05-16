@@ -21,7 +21,8 @@ const cpromocards = {
       default: () => { 
         return {
           showDetails: false,
-          sortKey: 'date'
+          sortKey: 'date',
+          sortAsc: true
         }
       },
       required: false,
@@ -79,7 +80,7 @@ const cpromocards = {
     function promoDeleteClick(calId, event, index) {
       promoEvent.calId = calId;
 
-      //Assign event to input model of form, full assign uncessary since promo will be deleted
+      //Assign event to form's input model, full assign uncessary since promo will be deleted
       promoEvent.input = event;
 
       //Show confirm  dialog
@@ -212,8 +213,9 @@ const cpromocards = {
 
     watch(lastAction, async (currentValue, oldValue) => {
       console.log('Last Action: [' + currentValue + '][' + lastActionModel.value +']')
-      if (['newpromoadded'].includes(currentValue)){        
-        card_addLastSavedEventAndBlink(promoData.promos.events, compare, cardRefs);
+      if (['newpromoadded'].includes(currentValue)){  
+        let compare = getPromoComparator(props.options.sortKey, props.options.sortAsc) 
+        card_addLastSavedEventAndBlink(promoEvents.value.events, compare, cardRefs);
       } 
     })
 
